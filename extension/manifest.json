@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Pangolin — Upwork Signal Capture",
+  "version": "0.1.0",
+  "description": "Captures Upwork job listings for pattern analysis",
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://www.upwork.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.upwork.com/nx/search/jobs*", "https://www.upwork.com/nx/find-work*", "https://www.upwork.com/freelance-jobs/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

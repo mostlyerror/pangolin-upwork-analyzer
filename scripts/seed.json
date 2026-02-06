@@ -1,0 +1,109 @@
+[
+  {
+    "title": "Build Salesforce-DocuSign integration for real estate brokerage",
+    "description": "We are a real estate brokerage (50+ agents) and need to connect our Salesforce CRM with DocuSign. When an agent closes a deal, the data should automatically flow from Salesforce into DocuSign for e-signatures. Currently our agents are manually copying data between the two systems, wasting 30+ minutes per transaction. We need someone experienced with both platforms' APIs.",
+    "budgetType": "fixed",
+    "budgetMin": 3000,
+    "budgetMax": 5000,
+    "skills": ["Salesforce", "DocuSign API", "REST API", "JavaScript"],
+    "category": "Web Development",
+    "client": {
+      "name": "Sarah M.",
+      "totalSpent": "$45K+",
+      "location": "Austin, TX"
+    }
+  },
+  {
+    "title": "Automate closing workflow — CRM to document signing",
+    "description": "Real estate team looking for automation help. Our closing process is entirely manual: agent updates CRM, then re-enters same info in dotloop for signatures, then manually tracks status in a spreadsheet. Need someone to build an automated pipeline. Open to Zapier or custom solution.",
+    "budgetType": "fixed",
+    "budgetMin": 2000,
+    "budgetMax": 4000,
+    "skills": ["Zapier", "CRM", "API Integration", "dotloop"],
+    "category": "Automation",
+    "client": {
+      "name": "Mike R.",
+      "totalSpent": "$12K+",
+      "location": "Denver, CO"
+    }
+  },
+  {
+    "title": "Connect HubSpot to DocuSign for property management",
+    "description": "Property management company. We use HubSpot as our CRM and DocuSign for lease agreements. Need these two connected so when a lead converts to a tenant, lease docs are auto-generated and sent. We also want signed docs to sync back to HubSpot contact records.",
+    "budgetType": "fixed",
+    "budgetMin": 2500,
+    "budgetMax": 3500,
+    "skills": ["HubSpot", "DocuSign", "API", "Node.js"],
+    "category": "Web Development",
+    "client": {
+      "name": "Jennifer L.",
+      "totalSpent": "$8K+",
+      "location": "Miami, FL"
+    }
+  },
+  {
+    "title": "Shopify inventory sync with QuickBooks",
+    "description": "We run an e-commerce store on Shopify and our accounting is in QuickBooks Online. Need real-time sync of inventory levels, orders, and revenue between the two. Currently exporting CSVs manually every day which is error-prone. Looking for a reliable automated solution.",
+    "budgetType": "fixed",
+    "budgetMin": 1500,
+    "budgetMax": 2500,
+    "skills": ["Shopify", "QuickBooks", "API Integration", "Python"],
+    "category": "E-commerce Development",
+    "client": {
+      "name": "David K.",
+      "totalSpent": "$22K+",
+      "location": "Portland, OR"
+    }
+  },
+  {
+    "title": "WooCommerce to Xero accounting automation",
+    "description": "Small e-commerce brand. Every order on our WooCommerce store needs to be manually entered into Xero as an invoice. With 50+ orders per day this is killing us. Need someone to automate the flow: order placed → invoice created in Xero → inventory updated. Must handle refunds and partial payments too.",
+    "budgetType": "hourly",
+    "budgetMin": 40,
+    "budgetMax": 75,
+    "skills": ["WooCommerce", "Xero API", "PHP", "REST API"],
+    "category": "Web Development",
+    "client": {
+      "name": "Lisa T.",
+      "totalSpent": "$5K+",
+      "location": "London, UK"
+    }
+  },
+  {
+    "title": "Scrape competitor pricing data daily",
+    "description": "E-commerce company selling electronics. We need to monitor competitor prices on Amazon and 3 other sites daily. Currently checking manually. Need a script that scrapes prices for ~200 SKUs daily and dumps into a Google Sheet or Airtable with change alerts.",
+    "budgetType": "fixed",
+    "budgetMin": 800,
+    "budgetMax": 1500,
+    "skills": ["Web Scraping", "Python", "BeautifulSoup", "Google Sheets API"],
+    "category": "Data Science & Analytics",
+    "client": {
+      "name": "Alex P.",
+      "totalSpent": "$3K+",
+      "location": "New York, NY"
+    }
+  },
+  {
+    "title": "Real estate CRM integration with MLS data feed",
+    "description": "We need our CRM (Follow Up Boss) integrated with our local MLS data feed (RETS/RESO). Want new listings to auto-import, and when our agents claim a lead, the relevant listing data should populate in the CRM. Currently agents are copy-pasting listing details manually.",
+    "budgetType": "fixed",
+    "budgetMin": 4000,
+    "budgetMax": 6000,
+    "skills": ["RETS", "API Integration", "CRM", "Python"],
+    "category": "Web Development",
+    "client": {
+      "name": "Chris B.",
+      "totalSpent": "$30K+",
+      "location": "Phoenix, AZ"
+    }
+  },
+  {
+    "title": "Build automated lead nurture email sequences for real estate",
+    "description": "Real estate team of 20 agents. We get leads from Zillow, Realtor.com, and our website but our follow-up is inconsistent. Need automated email/SMS sequences based on lead source and behavior. Must integrate with our CRM (kvCORE). Think drip campaigns but smarter — trigger based actions.",
+    "budgetType": "fixed",
+    "budgetMin": 2000,
+    "budgetMax": 3500,
+    "skills": ["Email Marketing", "CRM", "Automation", "kvCORE"],
+    "category": "Marketing Automation"
+  }
+]
