@@ -11,6 +11,18 @@ interface Cluster {
   avg_budget: number | null;
   velocity: number;
   representative_title?: string;
+  recency_factor: number | null;
+  listings_this_week: number;
+  listings_this_month: number;
+  listings_older: number;
+  budget_min: number | null;
+  budget_max: number | null;
+  buyer_count: number;
+}
+
+function fmt$(n: number | null | undefined) {
+  if (n == null) return "—";
+  return "$" + Math.round(Number(n)).toLocaleString();
 }
 
 export default function Dashboard() {
@@ -26,9 +38,12 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 8 }}>Opportunity Clusters</h1>
-      <p style={{ color: "#666", marginBottom: 24 }}>
-        Ranked by heat score (frequency x budget x recency)
+      <h1 style={{ marginBottom: 4 }}>Opportunity Clusters</h1>
+      <p style={{ color: "#666", marginBottom: 4, fontSize: 14 }}>
+        Ranked by heat score
+      </p>
+      <p style={{ color: "#aaa", marginBottom: 24, fontSize: 12 }}>
+        Heat = listings x avg budget x recency weight (this week 1.0, this month 0.7, older 0.4)
       </p>
 
       {loading && <p>Loading...</p>}
@@ -63,8 +78,9 @@ export default function Dashboard() {
               color: "inherit",
             }}
           >
+            {/* Header row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <h3 style={{ marginBottom: 4 }}>{c.name}</h3>
                 <p style={{ color: "#666", fontSize: 14 }}>{c.description}</p>
               </div>
@@ -75,27 +91,93 @@ export default function Dashboard() {
                 fontSize: 13,
                 fontWeight: 600,
                 whiteSpace: "nowrap",
+                marginLeft: 12,
               }}>
                 {Number(c.heat_score).toFixed(0)} heat
               </div>
             </div>
+
+            {/* Formula breakdown */}
+            <div style={{
+              marginTop: 12,
+              padding: 10,
+              background: "#f9fafb",
+              borderRadius: 6,
+              fontSize: 12,
+              fontFamily: "monospace",
+              color: "#555",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flexWrap: "wrap",
+            }}>
+              <span style={{ fontWeight: 600 }}>{c.listing_count}</span>
+              <span style={{ color: "#aaa" }}>listings</span>
+              <span style={{ color: "#ccc" }}>&times;</span>
+              <span style={{ fontWeight: 600 }}>{fmt$(c.avg_budget)}</span>
+              <span style={{ color: "#aaa" }}>avg budget</span>
+              <span style={{ color: "#ccc" }}>&times;</span>
+              <span style={{ fontWeight: 600 }}>{Number(c.recency_factor ?? 0).toFixed(2)}</span>
+              <span style={{ color: "#aaa" }}>recency</span>
+              <span style={{ color: "#ccc" }}>=</span>
+              <span style={{ fontWeight: 700, color: "#b45309" }}>{Number(c.heat_score).toFixed(0)}</span>
+            </div>
+
+            {/* Detail chips */}
             <div style={{
               display: "flex",
-              gap: 16,
-              marginTop: 12,
-              fontSize: 13,
-              color: "#888",
+              gap: 8,
+              marginTop: 10,
+              fontSize: 12,
+              flexWrap: "wrap",
             }}>
-              <span>{c.listing_count} listing{c.listing_count !== 1 ? "s" : ""}</span>
-              <span>Avg ${c.avg_budget ? Math.round(Number(c.avg_budget)).toLocaleString() : "—"}</span>
-              <span>Velocity: {Number(c.velocity).toFixed(1)}x</span>
-              {c.representative_title && (
-                <span style={{ color: "#aaa" }}>e.g. "{c.representative_title}"</span>
+              <Chip
+                label={`${c.listings_this_week} this week`}
+                color={c.listings_this_week > 0 ? "#059669" : "#9ca3af"}
+              />
+              <Chip
+                label={`${c.listings_this_month} this month`}
+                color={c.listings_this_month > 0 ? "#2563eb" : "#9ca3af"}
+              />
+              {c.listings_older > 0 && (
+                <Chip label={`${c.listings_older} older`} color="#9ca3af" />
+              )}
+              <Chip
+                label={`${fmt$(c.budget_min)} – ${fmt$(c.budget_max)}`}
+                color="#7c3aed"
+              />
+              <Chip
+                label={`${c.buyer_count} buyer${c.buyer_count !== 1 ? "s" : ""}`}
+                color="#0891b2"
+              />
+              {Number(c.velocity) > 1 && (
+                <Chip
+                  label={`${Number(c.velocity).toFixed(1)}x velocity`}
+                  color="#dc2626"
+                />
               )}
             </div>
           </a>
         ))}
       </div>
     </div>
+  );
+}
+
+function Chip({ label, color }: { label: string; color: string }) {
+  return (
+    <span
+      style={{
+        padding: "2px 8px",
+        borderRadius: 10,
+        border: `1px solid ${color}30`,
+        background: `${color}10`,
+        color,
+        fontSize: 12,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
   );
 }

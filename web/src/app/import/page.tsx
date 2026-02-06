@@ -1,22 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+interface QueueStats {
+  total: number;
+  unprocessed: number;
+  processed: number;
+}
+
+interface ProgressItem {
+  title: string;
+  status: "extracting" | "clustering" | "ok" | "error";
+  cluster?: string;
+  error?: string;
+}
 
 export default function ImportPage() {
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [stats, setStats] = useState<QueueStats | null>(null);
+  const [progressTotal, setProgressTotal] = useState(0);
+  const [progressCurrent, setProgressCurrent] = useState(0);
+  const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/stats");
+      if (res.ok) setStats(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   async function handleImport() {
     setStatus("Importing...");
     try {
-      // Try to parse as JSON array of listings
       let listings;
       try {
         const parsed = JSON.parse(input);
         listings = Array.isArray(parsed) ? parsed : [parsed];
       } catch {
-        // Treat as a single pasted listing — title on first line, rest is description
         const lines = input.trim().split("\n");
         listings = [
           {
@@ -37,6 +63,7 @@ export default function ImportPage() {
       setStatus(
         `Imported ${result.inserted} listing(s), ${result.skipped} duplicate(s) skipped.`
       );
+      fetchStats();
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
     }
@@ -44,20 +71,82 @@ export default function ImportPage() {
 
   async function handleProcess() {
     setProcessing(true);
-    setStatus("Running AI extraction + clustering...");
+    setStatus(null);
+    setProgressItems([]);
+    setProgressCurrent(0);
+    setProgressTotal(0);
+
     try {
       const res = await fetch("/api/process", { method: "POST" });
-      const result = await res.json();
-      setStatus(
-        `Processed ${result.processed} listing(s). ${result.results
-          ?.map((r: any) => `#${r.id}: ${r.status}${r.cluster ? ` → ${r.cluster}` : ""}`)
-          .join(", ") || result.message}`
-      );
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.type === "start") {
+              setProgressTotal(data.total);
+            } else if (data.type === "progress") {
+              setProgressCurrent(data.current);
+              setProgressItems((prev) => {
+                const existing = prev.findIndex((p) => p.title === data.title);
+                const item: ProgressItem = {
+                  title: data.title,
+                  status: data.step,
+                };
+                if (existing >= 0) {
+                  const next = [...prev];
+                  next[existing] = item;
+                  return next;
+                }
+                return [...prev, item];
+              });
+            } else if (data.type === "item_done") {
+              setProgressCurrent(data.current);
+              setProgressItems((prev) => {
+                const next = [...prev];
+                const idx = next.findIndex((p) => p.title === data.title);
+                const item: ProgressItem = {
+                  title: data.title,
+                  status: data.status,
+                  cluster: data.cluster,
+                  error: data.error,
+                };
+                if (idx >= 0) {
+                  next[idx] = item;
+                } else {
+                  next.push(item);
+                }
+                return next;
+              });
+            } else if (data.type === "done") {
+              setStatus(`Done — processed ${data.processed} listing(s).`);
+            }
+          } catch {}
+        }
+      }
+
+      fetchStats();
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
     }
     setProcessing(false);
   }
+
+  const pct = progressTotal > 0 ? Math.round((progressCurrent / progressTotal) * 100) : 0;
 
   return (
     <div>
@@ -66,6 +155,116 @@ export default function ImportPage() {
         Paste JSON from the Chrome extension, or paste a raw listing (title on
         first line, description below).
       </p>
+
+      {/* Queue status */}
+      {stats && (
+        <div
+          style={{
+            padding: 14,
+            background: stats.unprocessed > 0 ? "#fffbeb" : "#f0fdf4",
+            border: `1px solid ${stats.unprocessed > 0 ? "#fde68a" : "#bbf7d0"}`,
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 14,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <strong>{stats.total}</strong> total listings &nbsp;|&nbsp;{" "}
+            <strong style={{ color: stats.unprocessed > 0 ? "#d97706" : "#16a34a" }}>
+              {stats.unprocessed}
+            </strong>{" "}
+            awaiting AI processing &nbsp;|&nbsp;{" "}
+            <strong style={{ color: "#16a34a" }}>{stats.processed}</strong> processed
+          </div>
+          {stats.unprocessed > 0 && !processing && (
+            <button
+              onClick={handleProcess}
+              style={{
+                padding: "6px 14px",
+                background: "#059669",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              Process {stats.unprocessed} listings
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Progress indicator */}
+      {processing && progressTotal > 0 && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 16,
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
+            <span style={{ fontWeight: 600 }}>
+              Processing {progressCurrent} of {progressTotal}
+            </span>
+            <span style={{ color: "#666" }}>{pct}%</span>
+          </div>
+
+          {/* Progress bar */}
+          <div
+            style={{
+              height: 8,
+              background: "#e5e7eb",
+              borderRadius: 4,
+              overflow: "hidden",
+              marginBottom: 12,
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${pct}%`,
+                background: "#059669",
+                borderRadius: 4,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+
+          {/* Item log */}
+          <div style={{ maxHeight: 200, overflowY: "auto", fontSize: 13 }}>
+            {progressItems.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "4px 0",
+                  borderBottom: "1px solid #f3f4f6",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: item.status === "error" ? "#dc2626" : "#374151",
+                }}
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>
+                  {item.title}
+                </span>
+                <span style={{ color: "#888", fontSize: 12 }}>
+                  {item.status === "extracting" && "Extracting..."}
+                  {item.status === "clustering" && "Clustering..."}
+                  {item.status === "ok" && `→ ${item.cluster}`}
+                  {item.status === "error" && `Error: ${item.error}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <textarea
         value={input}
@@ -116,7 +315,7 @@ export default function ImportPage() {
         </button>
       </div>
 
-      {status && (
+      {status && !processing && (
         <div
           style={{
             marginTop: 16,
