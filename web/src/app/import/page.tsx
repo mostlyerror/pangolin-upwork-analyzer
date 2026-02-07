@@ -23,6 +23,7 @@ export default function ImportPage() {
   const [progressTotal, setProgressTotal] = useState(0);
   const [progressCurrent, setProgressCurrent] = useState(0);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+  const [batchSize, setBatchSize] = useState(20);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -69,6 +70,13 @@ export default function ImportPage() {
     }
   }
 
+  function confirmAndProcess() {
+    const count = Math.min(batchSize, stats?.unprocessed ?? 0);
+    const calls = count * 2;
+    if (!confirm(`Process ${count} listings? This will make ~${calls} Anthropic API calls.`)) return;
+    handleProcess();
+  }
+
   async function handleProcess() {
     setProcessing(true);
     setStatus(null);
@@ -77,7 +85,11 @@ export default function ImportPage() {
     setProgressTotal(0);
 
     try {
-      const res = await fetch("/api/process", { method: "POST" });
+      const res = await fetch("/api/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: batchSize }),
+      });
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No response stream");
 
@@ -180,21 +192,37 @@ export default function ImportPage() {
             <strong style={{ color: "#16a34a" }}>{stats.processed}</strong> processed
           </div>
           {stats.unprocessed > 0 && !processing && (
-            <button
-              onClick={handleProcess}
-              style={{
-                padding: "6px 14px",
-                background: "#059669",
-                color: "white",
-                border: "none",
-                borderRadius: 6,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              Process {stats.unprocessed} listings
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ fontSize: 13, color: "#666" }}>
+                Batch:
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                  style={{
+                    width: 60, marginLeft: 4, padding: "4px 6px",
+                    border: "1px solid #d1d5db", borderRadius: 4, fontSize: 13,
+                  }}
+                />
+              </label>
+              <button
+                onClick={confirmAndProcess}
+                style={{
+                  padding: "6px 14px",
+                  background: "#059669",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Process {Math.min(batchSize, stats.unprocessed)} of {stats.unprocessed}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -299,7 +327,7 @@ export default function ImportPage() {
           Import
         </button>
         <button
-          onClick={handleProcess}
+          onClick={confirmAndProcess}
           disabled={processing}
           style={{
             padding: "10px 20px",

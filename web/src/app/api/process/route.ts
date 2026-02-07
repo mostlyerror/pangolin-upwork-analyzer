@@ -2,7 +2,15 @@ import { query, queryOne } from "@/lib/db";
 import { extractListing, suggestCluster } from "@/lib/ai";
 
 // POST /api/process — stream AI extraction + clustering progress
-export async function POST() {
+export async function POST(req: Request) {
+  let limit = 20;
+  try {
+    const body = await req.json();
+    if (body.limit && Number.isInteger(body.limit) && body.limit > 0) {
+      limit = Math.min(body.limit, 500);
+    }
+  } catch {}
+
   const unprocessed = await query<{
     id: number;
     title: string;
@@ -12,7 +20,8 @@ export async function POST() {
     budget_max: number | null;
     buyer_id: number | null;
   }>(
-    "SELECT id, title, description, skills, budget_min, budget_max, buyer_id FROM listings WHERE ai_processed_at IS NULL ORDER BY captured_at LIMIT 20"
+    "SELECT id, title, description, skills, budget_min, budget_max, buyer_id FROM listings WHERE ai_processed_at IS NULL ORDER BY captured_at LIMIT $1",
+    [limit]
   );
 
   const total = unprocessed.length;
