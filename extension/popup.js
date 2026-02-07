@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = 'http://localhost:3000/api/listings';
+const DEFAULT_API_URL = 'http://localhost:3939/api/listings';
 
 const apiUrlInput = document.getElementById('apiUrl');
 const captureBtn = document.getElementById('captureBtn');
@@ -36,18 +36,19 @@ async function extractFromPage() {
 // Capture & Send to API
 captureBtn.addEventListener('click', async () => {
   captureBtn.disabled = true;
-  setStatus('Extracting listings...');
+  setStatus('Fetching listings from Upwork...');
 
   try {
-    const { listings, count } = await extractFromPage();
+    const { listings, count, source, apiError } = await extractFromPage();
 
     if (count === 0) {
-      setStatus('No listings found on this page.');
+      setStatus('No listings found.' + (apiError ? ` (API error: ${apiError})` : ''));
       captureBtn.disabled = false;
       return;
     }
 
-    setStatus(`Found <span class="count">${count}</span> listings. Sending...`);
+    const sourceLabel = source === 'api' ? 'via API' : 'via DOM';
+    setStatus(`Found <span class="count">${count}</span> listings ${sourceLabel}. Sending...`);
 
     const apiUrl = apiUrlInput.value || DEFAULT_API_URL;
     const res = await fetch(apiUrl, {
@@ -59,7 +60,9 @@ captureBtn.addEventListener('click', async () => {
     if (!res.ok) throw new Error(`API returned ${res.status}`);
 
     const result = await res.json();
-    setStatus(`Sent <span class="count">${result.inserted}</span> new, ${result.skipped} duplicates skipped.`);
+    setStatus(
+      `Sent <span class="count">${result.inserted}</span> new, ${result.skipped} duplicates skipped. (${sourceLabel})`
+    );
   } catch (err) {
     setStatus(`Error: ${err.message}`);
   }
@@ -69,18 +72,19 @@ captureBtn.addEventListener('click', async () => {
 
 // Copy JSON fallback
 copyBtn.addEventListener('click', async () => {
-  setStatus('Extracting listings...');
+  setStatus('Fetching listings from Upwork...');
 
   try {
-    const { listings, count } = await extractFromPage();
+    const { listings, count, source } = await extractFromPage();
 
     if (count === 0) {
-      setStatus('No listings found on this page.');
+      setStatus('No listings found.');
       return;
     }
 
     await navigator.clipboard.writeText(JSON.stringify(listings, null, 2));
-    setStatus(`Copied <span class="count">${count}</span> listings to clipboard.`);
+    const sourceLabel = source === 'api' ? 'via API' : 'via DOM';
+    setStatus(`Copied <span class="count">${count}</span> listings to clipboard. (${sourceLabel})`);
   } catch (err) {
     setStatus(`Error: ${err.message}`);
   }

@@ -24,6 +24,7 @@ export default function RootLayout({
         }}>
           <strong style={{ fontSize: 18 }}>Pangolin</strong>
           <a href="/">Dashboard</a>
+          <a href="/trends">Trends</a>
           <a href="/import">Import</a>
         </nav>
         <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
