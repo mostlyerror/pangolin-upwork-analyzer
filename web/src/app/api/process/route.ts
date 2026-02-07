@@ -1,6 +1,17 @@
 import { query, queryOne } from "@/lib/db";
 import { extractListing, suggestCluster } from "@/lib/ai";
 
+function classifyApiError(err: any): { errorType: string; message: string; fatal: boolean } {
+  const status = err?.status ?? err?.statusCode;
+  if (status === 401) {
+    return { errorType: "auth_error", message: "API key invalid — check your ANTHROPIC_API_KEY", fatal: true };
+  }
+  if (status === 429) {
+    return { errorType: "rate_limit", message: "Rate limited — check your credit balance at console.anthropic.com", fatal: true };
+  }
+  return { errorType: "processing_error", message: err?.message ?? String(err), fatal: false };
+}
+
 // POST /api/process — stream AI extraction + clustering progress
 export async function POST(req: Request) {
   let limit = 20;
@@ -79,7 +90,7 @@ export async function POST(req: Request) {
             `UPDATE listings SET
               problem_category = $1, vertical = $2, workflow_described = $3,
               tools_mentioned = $4, budget_tier = $5, is_recurring_type_need = $6,
-              ai_processed_at = now()
+              ai_processed_at = now(), ai_error = NULL
             WHERE id = $7`,
             [
               extracted.problem_category,
@@ -150,6 +161,14 @@ export async function POST(req: Request) {
             status: "ok",
           });
         } catch (err: any) {
+          const classified = classifyApiError(err);
+
+          // Persist the error so this listing won't retry forever
+          await query(
+            `UPDATE listings SET ai_processed_at = now(), ai_error = $1 WHERE id = $2`,
+            [classified.message, listing.id]
+          ).catch(() => {}); // don't let DB error mask the original
+
           completed++;
           send({
             type: "item_done",
@@ -157,8 +176,23 @@ export async function POST(req: Request) {
             total,
             title: listing.title,
             status: "error",
-            error: err.message,
+            error: classified.message,
+            errorType: classified.errorType,
           });
+
+          // On auth/rate-limit errors, abort the batch early
+          if (classified.fatal) {
+            send({
+              type: "fatal_error",
+              errorType: classified.errorType,
+              message: classified.message,
+              processed: completed,
+              skipped: total - completed,
+            });
+            await recalcHeatScores();
+            controller.close();
+            return;
+          }
         }
       }
 

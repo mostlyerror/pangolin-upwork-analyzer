@@ -6,6 +6,11 @@ interface QueueStats {
   total: number;
   unprocessed: number;
   processed: number;
+  processed_today: number;
+  processed_this_week: number;
+  errors: number;
+  new_clusters_this_week: number;
+  existing_cluster_assignments_this_week: number;
 }
 
 interface ProgressItem {
@@ -24,6 +29,8 @@ export default function ImportPage() {
   const [progressCurrent, setProgressCurrent] = useState(0);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
   const [batchSize, setBatchSize] = useState(20);
+  const [fatalError, setFatalError] = useState<{ errorType: string; message: string } | null>(null);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -80,6 +87,7 @@ export default function ImportPage() {
   async function handleProcess() {
     setProcessing(true);
     setStatus(null);
+    setFatalError(null);
     setProgressItems([]);
     setProgressCurrent(0);
     setProgressTotal(0);
@@ -144,6 +152,9 @@ export default function ImportPage() {
                 }
                 return next;
               });
+            } else if (data.type === "fatal_error") {
+              setFatalError({ errorType: data.errorType, message: data.message });
+              setStatus(`Stopped — ${data.message} (${data.processed} processed, ${data.skipped} skipped)`);
             } else if (data.type === "done") {
               setStatus(`Done — processed ${data.processed} listing(s).`);
             }
@@ -167,6 +178,33 @@ export default function ImportPage() {
         Paste JSON from the Chrome extension, or paste a raw listing (title on
         first line, description below).
       </p>
+
+      {/* Fatal error banner */}
+      {fatalError && (
+        <div
+          style={{
+            padding: 14,
+            background: fatalError.errorType === "auth_error" ? "#fef2f2" : "#fffbeb",
+            border: `1px solid ${fatalError.errorType === "auth_error" ? "#fecaca" : "#fde68a"}`,
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 14,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 4, color: fatalError.errorType === "auth_error" ? "#dc2626" : "#d97706" }}>
+            {fatalError.errorType === "auth_error" ? "API Key Error" : "Rate Limited"}
+          </div>
+          <div style={{ marginBottom: 8 }}>{fatalError.message}</div>
+          <a
+            href="https://console.anthropic.com/settings/billing"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#2563eb", textDecoration: "underline", fontSize: 13 }}
+          >
+            Open Anthropic Console
+          </a>
+        </div>
+      )}
 
       {/* Queue status */}
       {stats && (
@@ -222,6 +260,82 @@ export default function ImportPage() {
               >
                 Process {Math.min(batchSize, stats.unprocessed)} of {stats.unprocessed}
               </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AI Processing Stats */}
+      {stats && (stats.processed_today > 0 || stats.processed_this_week > 0 || stats.errors > 0) && (
+        <div
+          style={{
+            padding: 14,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>AI Processing Stats</div>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <div>
+              <span style={{ color: "#64748b" }}>Today:</span>{" "}
+              <strong>{stats.processed_today}</strong>
+            </div>
+            <div>
+              <span style={{ color: "#64748b" }}>This week:</span>{" "}
+              <strong>{stats.processed_this_week}</strong>
+            </div>
+            <div>
+              <span style={{ color: stats.errors > 0 ? "#dc2626" : "#64748b" }}>Errors:</span>{" "}
+              <strong style={{ color: stats.errors > 0 ? "#dc2626" : undefined }}>
+                {stats.errors}
+              </strong>
+              {stats.errors > 0 && (
+                <button
+                  onClick={() => setShowErrorDetails(!showErrorDetails)}
+                  style={{
+                    marginLeft: 6,
+                    background: "none",
+                    border: "none",
+                    color: "#2563eb",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    textDecoration: "underline",
+                  }}
+                >
+                  {showErrorDetails ? "hide" : "details"}
+                </button>
+              )}
+            </div>
+            <div>
+              <span style={{ color: "#64748b" }}>Clusters this week:</span>{" "}
+              <strong>{stats.new_clusters_this_week}</strong> new / <strong>{stats.existing_cluster_assignments_this_week}</strong> existing
+            </div>
+          </div>
+          {showErrorDetails && stats.errors > 0 && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: 10,
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+                fontSize: 12,
+                color: "#991b1b",
+              }}
+            >
+              {stats.errors} listing(s) failed AI processing. These listings have been marked with errors and will not retry automatically.
+              {" "}
+              <a
+                href="https://console.anthropic.com/settings/billing"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#2563eb", textDecoration: "underline" }}
+              >
+                Check Anthropic billing
+              </a>
             </div>
           )}
         </div>
@@ -348,8 +462,8 @@ export default function ImportPage() {
           style={{
             marginTop: 16,
             padding: 12,
-            background: status.startsWith("Error") ? "#fef2f2" : "#f0fdf4",
-            border: `1px solid ${status.startsWith("Error") ? "#fecaca" : "#bbf7d0"}`,
+            background: status.startsWith("Error") || status.startsWith("Stopped") ? "#fef2f2" : "#f0fdf4",
+            border: `1px solid ${status.startsWith("Error") || status.startsWith("Stopped") ? "#fecaca" : "#bbf7d0"}`,
             borderRadius: 8,
             fontSize: 13,
           }}

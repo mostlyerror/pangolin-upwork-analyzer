@@ -40,6 +40,7 @@ CREATE TABLE listings (
     budget_tier             TEXT CHECK (budget_tier IN ('low', 'mid', 'high')),
     is_recurring_type_need  BOOLEAN,
     ai_processed_at         TIMESTAMPTZ,
+    ai_error                TEXT,
 
     -- Buyer link
     buyer_id        INTEGER REFERENCES buyers(id) ON DELETE SET NULL,
