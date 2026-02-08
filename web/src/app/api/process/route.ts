@@ -12,6 +12,40 @@ function classifyApiError(err: any): { errorType: string; message: string; fatal
   return { errorType: "processing_error", message: err?.message ?? String(err), fatal: false };
 }
 
+function computeCostCents(
+  haikuIn: number, haikuOut: number,
+  sonnetIn: number, sonnetOut: number,
+): number {
+  // Haiku: $1/M input, $5/M output; Sonnet: $3/M input, $15/M output
+  // Result in cents: divide dollar microcents by 10_000
+  return Math.ceil((haikuIn * 1 + haikuOut * 5 + sonnetIn * 3 + sonnetOut * 15) / 10_000);
+}
+
+async function finalizeRun(
+  runId: number,
+  status: "completed" | "aborted",
+  succeeded: number,
+  failed: number,
+  total: number,
+  haikuIn: number, haikuOut: number,
+  sonnetIn: number, sonnetOut: number,
+  errorMessage?: string,
+) {
+  const totalIn = haikuIn + sonnetIn;
+  const totalOut = haikuOut + sonnetOut;
+  const costCents = computeCostCents(haikuIn, haikuOut, sonnetIn, sonnetOut);
+  await query(
+    `UPDATE processing_runs SET
+      completed_at = now(), status = $1,
+      listings_total = $2, listings_succeeded = $3, listings_failed = $4,
+      input_tokens = $5, output_tokens = $6, estimated_cost_cents = $7,
+      error_message = $8
+    WHERE id = $9`,
+    [status, total, succeeded, failed, totalIn, totalOut, costCents, errorMessage ?? null, runId]
+  ).catch(() => {});
+  return { totalIn, totalOut, costCents };
+}
+
 // POST /api/process — stream AI extraction + clustering progress
 export async function POST(req: Request) {
   let limit = 20;
@@ -44,6 +78,13 @@ export async function POST(req: Request) {
     );
   }
 
+  // Create a processing run record
+  const run = await queryOne<{ id: number }>(
+    `INSERT INTO processing_runs (listings_total, status) VALUES ($1, 'running') RETURNING id`,
+    [total]
+  );
+  const runId = run!.id;
+
   const existingClusters = await query<{
     id: number;
     name: string;
@@ -58,26 +99,31 @@ export async function POST(req: Request) {
 
       send({ type: "start", total });
 
-      let completed = 0;
+      let succeeded = 0;
+      let failed = 0;
+      let haikuIn = 0, haikuOut = 0;
+      let sonnetIn = 0, sonnetOut = 0;
 
       for (const listing of unprocessed) {
         try {
           send({
             type: "progress",
-            current: completed + 1,
+            current: succeeded + failed + 1,
             total,
             title: listing.title,
             step: "extracting",
           });
 
-          // Step 1: Extract
-          const extracted = await extractListing(
+          // Step 1: Extract (Haiku)
+          const { result: extracted, usage: extractUsage } = await extractListing(
             listing.title,
             listing.description,
             listing.skills,
             listing.budget_min,
             listing.budget_max
           );
+          haikuIn += extractUsage.input_tokens;
+          haikuOut += extractUsage.output_tokens;
 
           const tierRaw = (extracted.budget_tier || "").toLowerCase();
           const budgetTier = tierRaw.includes("low")
@@ -116,18 +162,20 @@ export async function POST(req: Request) {
 
           send({
             type: "progress",
-            current: completed + 1,
+            current: succeeded + failed + 1,
             total,
             title: listing.title,
             step: "clustering",
           });
 
-          // Step 2: Cluster
-          const suggestion = await suggestCluster(
+          // Step 2: Cluster (Sonnet)
+          const { result: suggestion, usage: clusterUsage } = await suggestCluster(
             extracted.problem_category,
             extracted.vertical,
             existingClusters
           );
+          sonnetIn += clusterUsage.input_tokens;
+          sonnetOut += clusterUsage.output_tokens;
 
           let clusterId: number;
           if (suggestion.action === "existing" && suggestion.cluster_id) {
@@ -151,10 +199,10 @@ export async function POST(req: Request) {
             [listing.id, clusterId]
           );
 
-          completed++;
+          succeeded++;
           send({
             type: "item_done",
-            current: completed,
+            current: succeeded + failed,
             total,
             title: listing.title,
             cluster: suggestion.cluster_name,
@@ -169,10 +217,10 @@ export async function POST(req: Request) {
             [classified.message, listing.id]
           ).catch(() => {}); // don't let DB error mask the original
 
-          completed++;
+          failed++;
           send({
             type: "item_done",
-            current: completed,
+            current: succeeded + failed,
             total,
             title: listing.title,
             status: "error",
@@ -182,12 +230,20 @@ export async function POST(req: Request) {
 
           // On auth/rate-limit errors, abort the batch early
           if (classified.fatal) {
+            const { totalIn, totalOut, costCents } = await finalizeRun(
+              runId, "aborted", succeeded, failed, total,
+              haikuIn, haikuOut, sonnetIn, sonnetOut, classified.message
+            );
             send({
               type: "fatal_error",
               errorType: classified.errorType,
               message: classified.message,
-              processed: completed,
-              skipped: total - completed,
+              processed: succeeded + failed,
+              skipped: total - succeeded - failed,
+              inputTokens: totalIn,
+              outputTokens: totalOut,
+              estimatedCostCents: costCents,
+              runId,
             });
             await recalcHeatScores();
             controller.close();
@@ -196,9 +252,24 @@ export async function POST(req: Request) {
         }
       }
 
+      // Finalize run as completed
+      const { totalIn, totalOut, costCents } = await finalizeRun(
+        runId, "completed", succeeded, failed, total,
+        haikuIn, haikuOut, sonnetIn, sonnetOut
+      );
+
       // Recalc heat scores
       await recalcHeatScores();
-      send({ type: "done", processed: completed });
+      send({
+        type: "done",
+        processed: succeeded + failed,
+        succeeded,
+        failed,
+        inputTokens: totalIn,
+        outputTokens: totalOut,
+        estimatedCostCents: costCents,
+        runId,
+      });
       controller.close();
     },
   });

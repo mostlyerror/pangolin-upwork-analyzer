@@ -2,6 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+interface RecentRun {
+  id: number;
+  started_at: string;
+  completed_at: string | null;
+  listings_total: number;
+  listings_succeeded: number;
+  listings_failed: number;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_cents: number;
+  status: string;
+}
+
 interface QueueStats {
   total: number;
   unprocessed: number;
@@ -11,6 +24,8 @@ interface QueueStats {
   errors: number;
   new_clusters_this_week: number;
   existing_cluster_assignments_this_week: number;
+  recent_runs: RecentRun[];
+  total_cost_cents_this_week: number;
 }
 
 interface ProgressItem {
@@ -18,6 +33,32 @@ interface ProgressItem {
   status: "extracting" | "clustering" | "ok" | "error";
   cluster?: string;
   error?: string;
+}
+
+interface RunSummary {
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCostCents: number;
+  runId: number;
+  succeeded: number;
+  failed: number;
+}
+
+function formatCost(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+    " " +
+    d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }
 
 export default function ImportPage() {
@@ -31,6 +72,7 @@ export default function ImportPage() {
   const [batchSize, setBatchSize] = useState(20);
   const [fatalError, setFatalError] = useState<{ errorType: string; message: string } | null>(null);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -91,6 +133,7 @@ export default function ImportPage() {
     setProgressItems([]);
     setProgressCurrent(0);
     setProgressTotal(0);
+    setRunSummary(null);
 
     try {
       const res = await fetch("/api/process", {
@@ -155,8 +198,28 @@ export default function ImportPage() {
             } else if (data.type === "fatal_error") {
               setFatalError({ errorType: data.errorType, message: data.message });
               setStatus(`Stopped — ${data.message} (${data.processed} processed, ${data.skipped} skipped)`);
+              if (data.inputTokens != null) {
+                setRunSummary({
+                  inputTokens: data.inputTokens,
+                  outputTokens: data.outputTokens,
+                  estimatedCostCents: data.estimatedCostCents,
+                  runId: data.runId,
+                  succeeded: 0,
+                  failed: data.processed,
+                });
+              }
             } else if (data.type === "done") {
               setStatus(`Done — processed ${data.processed} listing(s).`);
+              if (data.inputTokens != null) {
+                setRunSummary({
+                  inputTokens: data.inputTokens,
+                  outputTokens: data.outputTokens,
+                  estimatedCostCents: data.estimatedCostCents,
+                  runId: data.runId,
+                  succeeded: data.succeeded ?? data.processed,
+                  failed: data.failed ?? 0,
+                });
+              }
             }
           } catch {}
         }
@@ -313,6 +376,10 @@ export default function ImportPage() {
               <span style={{ color: "#64748b" }}>Clusters this week:</span>{" "}
               <strong>{stats.new_clusters_this_week}</strong> new / <strong>{stats.existing_cluster_assignments_this_week}</strong> existing
             </div>
+            <div>
+              <span style={{ color: "#64748b" }}>Weekly cost:</span>{" "}
+              <strong>{formatCost(stats.total_cost_cents_this_week)}</strong>
+            </div>
           </div>
           {showErrorDetails && stats.errors > 0 && (
             <div
@@ -408,6 +475,40 @@ export default function ImportPage() {
         </div>
       )}
 
+      {/* Run summary after processing */}
+      {!processing && runSummary && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 8,
+            fontSize: 13,
+            display: "flex",
+            gap: 20,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>Run #{runSummary.runId}</span>
+          <span>
+            <span style={{ color: "#64748b" }}>Tokens:</span>{" "}
+            {formatTokens(runSummary.inputTokens)} in / {formatTokens(runSummary.outputTokens)} out
+          </span>
+          <span>
+            <span style={{ color: "#64748b" }}>Cost:</span>{" "}
+            <strong>{formatCost(runSummary.estimatedCostCents)}</strong>
+          </span>
+          <span>
+            <span style={{ color: "#16a34a" }}>{runSummary.succeeded} succeeded</span>
+            {runSummary.failed > 0 && (
+              <span style={{ color: "#dc2626", marginLeft: 8 }}>{runSummary.failed} failed</span>
+            )}
+          </span>
+        </div>
+      )}
+
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -469,6 +570,74 @@ export default function ImportPage() {
           }}
         >
           {status}
+        </div>
+      )}
+
+      {/* Recent Runs */}
+      {stats && stats.recent_runs && stats.recent_runs.length > 0 && (
+        <div
+          style={{
+            marginTop: 24,
+            padding: 14,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 8,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}>Recent Runs</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e2e8f0", textAlign: "left" }}>
+                  <th style={{ padding: "6px 10px", color: "#64748b", fontWeight: 500 }}>Date</th>
+                  <th style={{ padding: "6px 10px", color: "#64748b", fontWeight: 500 }}>Listings</th>
+                  <th style={{ padding: "6px 10px", color: "#64748b", fontWeight: 500 }}>Tokens</th>
+                  <th style={{ padding: "6px 10px", color: "#64748b", fontWeight: 500 }}>Est. Cost</th>
+                  <th style={{ padding: "6px 10px", color: "#64748b", fontWeight: 500 }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.recent_runs.map((run) => (
+                  <tr key={run.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "6px 10px", whiteSpace: "nowrap" }}>
+                      {formatDate(run.started_at)}
+                    </td>
+                    <td style={{ padding: "6px 10px" }}>
+                      <span style={{ color: "#16a34a" }}>{run.listings_succeeded}</span>
+                      {run.listings_failed > 0 && (
+                        <span style={{ color: "#dc2626" }}> / {run.listings_failed} failed</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "6px 10px", color: "#64748b" }}>
+                      {formatTokens(run.input_tokens)} in / {formatTokens(run.output_tokens)} out
+                    </td>
+                    <td style={{ padding: "6px 10px", fontWeight: 500 }}>
+                      {formatCost(run.estimated_cost_cents)}
+                    </td>
+                    <td style={{ padding: "6px 10px" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: 9999,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background:
+                            run.status === "completed" ? "#dcfce7" :
+                            run.status === "running" ? "#dbeafe" : "#fef2f2",
+                          color:
+                            run.status === "completed" ? "#166534" :
+                            run.status === "running" ? "#1e40af" : "#991b1b",
+                        }}
+                      >
+                        {run.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

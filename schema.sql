@@ -86,7 +86,24 @@ CREATE TABLE enrichment_data (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Processing run history (tracks AI batch runs with token usage / cost)
+CREATE TABLE processing_runs (
+    id                     SERIAL PRIMARY KEY,
+    started_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at           TIMESTAMPTZ,
+    listings_total         INTEGER NOT NULL DEFAULT 0,
+    listings_succeeded     INTEGER NOT NULL DEFAULT 0,
+    listings_failed        INTEGER NOT NULL DEFAULT 0,
+    input_tokens           INTEGER NOT NULL DEFAULT 0,
+    output_tokens          INTEGER NOT NULL DEFAULT 0,
+    estimated_cost_cents   INTEGER NOT NULL DEFAULT 0,
+    status                 TEXT NOT NULL DEFAULT 'running'
+                           CHECK (status IN ('running', 'completed', 'aborted')),
+    error_message          TEXT
+);
+
 -- Indexes
+CREATE INDEX idx_processing_runs_started ON processing_runs(started_at DESC);
 CREATE INDEX idx_listings_buyer_id ON listings(buyer_id);
 CREATE INDEX idx_listings_ai_processed ON listings(ai_processed_at) WHERE ai_processed_at IS NULL;
 CREATE INDEX idx_listings_captured_at ON listings(captured_at);

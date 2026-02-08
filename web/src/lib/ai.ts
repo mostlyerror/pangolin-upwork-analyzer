@@ -2,6 +2,16 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export interface WithUsage<T> {
+  result: T;
+  usage: TokenUsage;
+}
+
 export interface ExtractionResult {
   problem_category: string;
   vertical: string;
@@ -19,7 +29,7 @@ export async function extractListing(
   skills: string[],
   budgetMin: number | null,
   budgetMax: number | null
-): Promise<ExtractionResult> {
+): Promise<WithUsage<ExtractionResult>> {
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1024,
@@ -57,7 +67,10 @@ Return ONLY valid JSON with these fields:
     throw new Error(`AI did not return valid JSON: ${text.slice(0, 200)}`);
   }
 
-  return JSON.parse(jsonMatch[0]) as ExtractionResult;
+  return {
+    result: JSON.parse(jsonMatch[0]) as ExtractionResult,
+    usage: { input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens },
+  };
 }
 
 export interface ClusterSuggestion {
@@ -71,7 +84,7 @@ export async function suggestCluster(
   problemCategory: string,
   vertical: string,
   existingClusters: { id: number; name: string; description: string | null }[]
-): Promise<ClusterSuggestion> {
+): Promise<WithUsage<ClusterSuggestion>> {
   const clusterList =
     existingClusters.length > 0
       ? existingClusters
@@ -114,5 +127,8 @@ Return ONLY valid JSON:
     throw new Error(`AI did not return valid JSON: ${text.slice(0, 200)}`);
   }
 
-  return JSON.parse(jsonMatch[0]) as ClusterSuggestion;
+  return {
+    result: JSON.parse(jsonMatch[0]) as ClusterSuggestion,
+    usage: { input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens },
+  };
 }

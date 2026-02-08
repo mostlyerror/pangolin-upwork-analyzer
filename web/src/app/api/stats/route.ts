@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { queryOne } from "@/lib/db";
+import { query, queryOne } from "@/lib/db";
 
 export async function GET() {
   const row = await queryOne<{
@@ -38,6 +38,31 @@ export async function GET() {
     JOIN clusters c ON c.id = lc.cluster_id
   `);
 
+  const recentRuns = await query<{
+    id: number;
+    started_at: string;
+    completed_at: string | null;
+    listings_total: number;
+    listings_succeeded: number;
+    listings_failed: number;
+    input_tokens: number;
+    output_tokens: number;
+    estimated_cost_cents: number;
+    status: string;
+  }>(
+    `SELECT id, started_at, completed_at, listings_total, listings_succeeded,
+            listings_failed, input_tokens, output_tokens, estimated_cost_cents, status
+     FROM processing_runs
+     ORDER BY started_at DESC
+     LIMIT 10`
+  );
+
+  const costRow = await queryOne<{ total: string }>(`
+    SELECT COALESCE(SUM(estimated_cost_cents), 0) AS total
+    FROM processing_runs
+    WHERE started_at > now() - interval '7 days'
+  `);
+
   return NextResponse.json({
     total: Number(row?.total ?? 0),
     unprocessed: Number(row?.unprocessed ?? 0),
@@ -47,5 +72,7 @@ export async function GET() {
     errors: Number(row?.errors ?? 0),
     new_clusters_this_week: Number(clusterRow?.new_clusters_this_week ?? 0),
     existing_cluster_assignments_this_week: Number(clusterRow?.existing_cluster_assignments_this_week ?? 0),
+    recent_runs: recentRuns,
+    total_cost_cents_this_week: Number(costRow?.total ?? 0),
   });
 }
