@@ -4,12 +4,19 @@ import { query } from "@/lib/db";
 // GET /api/clusters — list clusters ranked by heat score with breakdown
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const limit = Math.min(Number(searchParams.get("limit")) || 20, 100);
+  const limit = Math.min(Number(searchParams.get("limit")) || 100, 500);
 
   const rows = await query(
     `SELECT
       c.*,
       (SELECT title FROM listings WHERE id = c.representative_listing_id) AS representative_title,
+      ARRAY(
+        SELECT DISTINCT l2.vertical
+        FROM listing_clusters lc2
+        JOIN listings l2 ON l2.id = lc2.listing_id
+        WHERE lc2.cluster_id = c.id AND l2.vertical IS NOT NULL
+        LIMIT 5
+      ) AS top_verticals,
       breakdown.recency_factor,
       breakdown.listings_this_week,
       breakdown.listings_this_month,
