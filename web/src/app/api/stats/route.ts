@@ -57,11 +57,25 @@ export async function GET() {
      LIMIT 10`
   );
 
-  const costRow = await queryOne<{ total: string }>(`
-    SELECT COALESCE(SUM(estimated_cost_cents), 0) AS total
-    FROM processing_runs
-    WHERE started_at > now() - interval '7 days'
-  `);
+  const [costRow, overlapRow, paymentRow] = await Promise.all([
+    queryOne<{ total: string }>(`
+      SELECT COALESCE(SUM(estimated_cost_cents), 0) AS total
+      FROM processing_runs
+      WHERE started_at > now() - interval '7 days'
+    `),
+    queryOne<{ count: string }>(`
+      SELECT COUNT(*) AS count FROM (
+        SELECT listing_id FROM listing_clusters
+        GROUP BY listing_id HAVING COUNT(DISTINCT cluster_id) > 1
+      ) sub
+    `),
+    queryOne<{ verified: string; total: string }>(`
+      SELECT
+        COUNT(*) FILTER (WHERE (raw_data->'_meta'->>'paymentVerified')::boolean = true) AS verified,
+        COUNT(*) FILTER (WHERE raw_data->'_meta'->>'paymentVerified' IS NOT NULL) AS total
+      FROM listings
+    `),
+  ]);
 
   return NextResponse.json({
     total: Number(row?.total ?? 0),
@@ -74,5 +88,8 @@ export async function GET() {
     existing_cluster_assignments_this_week: Number(clusterRow?.existing_cluster_assignments_this_week ?? 0),
     recent_runs: recentRuns,
     total_cost_cents_this_week: Number(costRow?.total ?? 0),
+    multi_cluster_listings: Number(overlapRow?.count ?? 0),
+    payment_verified_count: Number(paymentRow?.verified ?? 0),
+    payment_verified_total: Number(paymentRow?.total ?? 0),
   });
 }

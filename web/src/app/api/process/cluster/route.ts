@@ -1,40 +1,45 @@
 import { query, queryOne } from "@/lib/db";
-import { extractListing, suggestCluster } from "@/lib/ai";
-import { classifyApiError, finalizeRun, recalcHeatScores } from "./shared";
+import { suggestCluster } from "@/lib/ai";
+import { classifyApiError, finalizeRun, recalcHeatScores } from "../shared";
 
-// POST /api/process — stream AI extraction + clustering progress
 export async function POST(req: Request) {
-  let limit = 20;
+  let listingIds: number[] = [];
   try {
     const body = await req.json();
-    if (body.limit && Number.isInteger(body.limit) && body.limit > 0) {
-      limit = Math.min(body.limit, 500);
+    if (Array.isArray(body.listingIds)) {
+      listingIds = body.listingIds.filter((id: any) => typeof id === "number" && Number.isInteger(id));
     }
   } catch {}
 
-  const unprocessed = await query<{
-    id: number;
-    title: string;
-    description: string | null;
-    skills: string[];
-    budget_min: number | null;
-    budget_max: number | null;
-    buyer_id: number | null;
-  }>(
-    "SELECT id, title, description, skills, budget_min, budget_max, buyer_id FROM listings WHERE ai_processed_at IS NULL ORDER BY captured_at LIMIT $1",
-    [limit]
-  );
-
-  const total = unprocessed.length;
-
-  if (total === 0) {
+  if (listingIds.length === 0) {
     return new Response(
-      `data: ${JSON.stringify({ type: "done", processed: 0, message: "No unprocessed listings" })}\n\n`,
+      `data: ${JSON.stringify({ type: "done", total: 0, succeeded: 0, failed: 0, message: "No listing IDs provided" })}\n\n`,
       { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } }
     );
   }
 
-  // Create a processing run record
+  // Load extraction data for the given IDs
+  const placeholders = listingIds.map((_, i) => `$${i + 1}`).join(",");
+  const listings = await query<{
+    id: number;
+    title: string;
+    problem_category: string | null;
+    vertical: string | null;
+    buyer_id: number | null;
+  }>(
+    `SELECT id, title, problem_category, vertical, buyer_id FROM listings WHERE id IN (${placeholders}) AND ai_processed_at IS NOT NULL AND ai_error IS NULL`,
+    listingIds
+  );
+
+  const total = listings.length;
+
+  if (total === 0) {
+    return new Response(
+      `data: ${JSON.stringify({ type: "done", total: 0, succeeded: 0, failed: 0, message: "No valid extracted listings found" })}\n\n`,
+      { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } }
+    );
+  }
+
   const run = await queryOne<{ id: number }>(
     `INSERT INTO processing_runs (listings_total, status) VALUES ($1, 'running') RETURNING id`,
     [total]
@@ -50,7 +55,7 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       function send(data: Record<string, any>) {
-        controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
+        try { controller.enqueue(`data: ${JSON.stringify(data)}\n\n`); } catch {}
       }
 
       send({ type: "start", total });
@@ -58,67 +63,28 @@ export async function POST(req: Request) {
       let succeeded = 0;
       let failed = 0;
       let haikuIn = 0, haikuOut = 0;
-      const sonnetIn = 0, sonnetOut = 0;
 
-      for (const listing of unprocessed) {
-        try {
+      for (const listing of listings) {
+        // Check abort
+        if (req.signal.aborted) {
+          const { totalIn, totalOut, costCents } = await finalizeRun(
+            runId, "aborted", succeeded, failed, total,
+            haikuIn, haikuOut, 0, 0, "Aborted by user"
+          );
           send({
-            type: "progress",
-            current: succeeded + failed + 1,
-            total,
-            title: listing.title,
-            step: "extracting",
+            type: "done",
+            succeeded,
+            failed,
+            tokens: { input: totalIn, output: totalOut },
+            costCents,
+            runId,
+            aborted: true,
           });
+          controller.close();
+          return;
+        }
 
-          // Step 1: Extract (Haiku)
-          const { result: extracted, usage: extractUsage, rawText } = await extractListing(
-            listing.title,
-            listing.description,
-            listing.skills,
-            listing.budget_min,
-            listing.budget_max
-          );
-          haikuIn += extractUsage.input_tokens;
-          haikuOut += extractUsage.output_tokens;
-
-          const tierRaw = (extracted.budget_tier || "").toLowerCase();
-          const budgetTier = tierRaw.includes("low")
-            ? "low"
-            : tierRaw.includes("high")
-              ? "high"
-              : "mid";
-
-          await query(
-            `UPDATE listings SET
-              problem_category = $1, vertical = $2, workflow_described = $3,
-              tools_mentioned = $4, budget_tier = $5, is_recurring_type_need = $6,
-              ai_processed_at = now(), ai_error = NULL,
-              ai_raw_extraction = $8, ai_confidence = $9
-            WHERE id = $7`,
-            [
-              extracted.problem_category,
-              extracted.vertical,
-              extracted.workflow_described,
-              extracted.tools_mentioned,
-              budgetTier,
-              extracted.is_recurring_type_need,
-              listing.id,
-              rawText,
-              extracted.confidence,
-            ]
-          );
-
-          if (listing.buyer_id && (extracted.buyer_company_name || extracted.buyer_industry)) {
-            await query(
-              `UPDATE buyers SET
-                company_name = COALESCE($1, company_name),
-                industry_vertical = COALESCE($2, industry_vertical),
-                updated_at = now()
-              WHERE id = $3`,
-              [extracted.buyer_company_name, extracted.buyer_industry, listing.buyer_id]
-            );
-          }
-
+        try {
           send({
             type: "progress",
             current: succeeded + failed + 1,
@@ -127,10 +93,9 @@ export async function POST(req: Request) {
             step: "clustering",
           });
 
-          // Step 2: Cluster (Sonnet)
           const { result: suggestion, usage: clusterUsage } = await suggestCluster(
-            extracted.problem_category,
-            extracted.vertical,
+            listing.problem_category || "",
+            listing.vertical || "",
             existingClusters
           );
           haikuIn += clusterUsage.input_tokens;
@@ -169,13 +134,6 @@ export async function POST(req: Request) {
           });
         } catch (err: any) {
           const classified = classifyApiError(err);
-
-          // Persist the error so this listing won't retry forever
-          await query(
-            `UPDATE listings SET ai_processed_at = now(), ai_error = $1 WHERE id = $2`,
-            [classified.message, listing.id]
-          ).catch(() => {}); // don't let DB error mask the original
-
           failed++;
           send({
             type: "item_done",
@@ -187,11 +145,10 @@ export async function POST(req: Request) {
             errorType: classified.errorType,
           });
 
-          // On auth/rate-limit errors, abort the batch early
           if (classified.fatal) {
             const { totalIn, totalOut, costCents } = await finalizeRun(
               runId, "aborted", succeeded, failed, total,
-              haikuIn, haikuOut, sonnetIn, sonnetOut, classified.message
+              haikuIn, haikuOut, 0, 0, classified.message
             );
             send({
               type: "fatal_error",
@@ -199,9 +156,13 @@ export async function POST(req: Request) {
               message: classified.message,
               processed: succeeded + failed,
               skipped: total - succeeded - failed,
-              inputTokens: totalIn,
-              outputTokens: totalOut,
-              estimatedCostCents: costCents,
+            });
+            send({
+              type: "done",
+              succeeded,
+              failed,
+              tokens: { input: totalIn, output: totalOut },
+              costCents,
               runId,
             });
             await recalcHeatScores();
@@ -211,22 +172,18 @@ export async function POST(req: Request) {
         }
       }
 
-      // Finalize run as completed
       const { totalIn, totalOut, costCents } = await finalizeRun(
         runId, "completed", succeeded, failed, total,
-        haikuIn, haikuOut, sonnetIn, sonnetOut
+        haikuIn, haikuOut, 0, 0
       );
 
-      // Recalc heat scores
       await recalcHeatScores();
       send({
         type: "done",
-        processed: succeeded + failed,
         succeeded,
         failed,
-        inputTokens: totalIn,
-        outputTokens: totalOut,
-        estimatedCostCents: costCents,
+        tokens: { input: totalIn, output: totalOut },
+        costCents,
         runId,
       });
       controller.close();

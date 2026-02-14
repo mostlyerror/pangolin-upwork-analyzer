@@ -42,6 +42,10 @@ CREATE TABLE listings (
     ai_processed_at         TIMESTAMPTZ,
     ai_error                TEXT,
 
+    -- AI quality monitoring
+    ai_raw_extraction       TEXT,
+    ai_confidence           REAL,
+
     -- Buyer link
     buyer_id        INTEGER REFERENCES buyers(id) ON DELETE SET NULL,
 
@@ -58,6 +62,10 @@ CREATE TABLE clusters (
     listing_count           INTEGER DEFAULT 0,
     avg_budget              NUMERIC(12,2),
     velocity                NUMERIC(10,2) DEFAULT 0, -- growth rate indicator
+    ai_interpretation       TEXT,
+    ai_interpretation_at    TIMESTAMPTZ,
+    product_brief           TEXT,
+    product_brief_at        TIMESTAMPTZ,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -111,3 +119,21 @@ CREATE INDEX idx_listings_problem_category ON listings(problem_category);
 CREATE INDEX idx_clusters_heat_score ON clusters(heat_score DESC);
 CREATE INDEX idx_enrichment_buyer_id ON enrichment_data(buyer_id);
 CREATE INDEX idx_enrichment_status ON enrichment_data(status) WHERE status != 'completed';
+CREATE INDEX idx_listings_vertical ON listings(vertical) WHERE vertical IS NOT NULL;
+CREATE INDEX idx_listings_ai_confidence ON listings(ai_confidence) WHERE ai_confidence IS NOT NULL;
+
+-- Quality feedback for extraction & cluster monitoring
+CREATE TABLE quality_feedback (
+    id                   SERIAL PRIMARY KEY,
+    listing_id           INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+    cluster_id           INTEGER REFERENCES clusters(id) ON DELETE SET NULL,
+    feedback_type        TEXT NOT NULL CHECK (feedback_type IN (
+                           'extraction_correct','extraction_wrong',
+                           'cluster_correct','cluster_wrong',
+                           'reassign_cluster')),
+    notes                TEXT,
+    suggested_cluster_id INTEGER REFERENCES clusters(id) ON DELETE SET NULL,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_quality_feedback_listing ON quality_feedback(listing_id);
+CREATE INDEX idx_quality_feedback_cluster ON quality_feedback(cluster_id);

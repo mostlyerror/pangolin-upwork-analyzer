@@ -23,7 +23,13 @@ export async function GET(req: NextRequest) {
       breakdown.listings_older,
       breakdown.budget_min,
       breakdown.budget_max,
-      breakdown.buyer_count
+      breakdown.buyer_count,
+      breakdown.listings_last_week,
+      breakdown.budget_stddev,
+      breakdown.latest_listing_at,
+      breakdown.avg_connect_price,
+      breakdown.verified_payment_count,
+      breakdown.payment_data_count
     FROM clusters c
     LEFT JOIN LATERAL (
       SELECT
@@ -33,11 +39,17 @@ export async function GET(req: NextRequest) {
           ELSE 0.4
         END) AS recency_factor,
         COUNT(*) FILTER (WHERE l.captured_at > now() - interval '7 days') AS listings_this_week,
+        COUNT(*) FILTER (WHERE l.captured_at BETWEEN now() - interval '14 days' AND now() - interval '7 days') AS listings_last_week,
         COUNT(*) FILTER (WHERE l.captured_at BETWEEN now() - interval '30 days' AND now() - interval '7 days') AS listings_this_month,
         COUNT(*) FILTER (WHERE l.captured_at < now() - interval '30 days') AS listings_older,
         MIN(COALESCE(l.budget_min, l.budget_max)) AS budget_min,
         MAX(COALESCE(l.budget_max, l.budget_min)) AS budget_max,
-        COUNT(DISTINCT l.buyer_id) FILTER (WHERE l.buyer_id IS NOT NULL) AS buyer_count
+        COUNT(DISTINCT l.buyer_id) FILTER (WHERE l.buyer_id IS NOT NULL) AS buyer_count,
+        ROUND(STDDEV(COALESCE(l.budget_max, l.budget_min, 0))::numeric, 0) AS budget_stddev,
+        MAX(l.captured_at) AS latest_listing_at,
+        ROUND(AVG((l.raw_data->'_meta'->>'connectPrice')::numeric), 1) AS avg_connect_price,
+        COUNT(*) FILTER (WHERE (l.raw_data->'_meta'->>'paymentVerified')::boolean = true) AS verified_payment_count,
+        COUNT(*) FILTER (WHERE l.raw_data->'_meta'->>'paymentVerified' IS NOT NULL) AS payment_data_count
       FROM listing_clusters lc
       JOIN listings l ON l.id = lc.listing_id
       WHERE lc.cluster_id = c.id
