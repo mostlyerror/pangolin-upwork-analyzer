@@ -137,3 +137,12 @@ CREATE TABLE quality_feedback (
 );
 CREATE INDEX idx_quality_feedback_listing ON quality_feedback(listing_id);
 CREATE INDEX idx_quality_feedback_cluster ON quality_feedback(cluster_id);
+
+-- Migration: pain & solution extraction fields (2026-05-08)
+-- ALTER TABLE listings
+--   ADD COLUMN IF NOT EXISTS pain_symptom     TEXT,
+--   ADD COLUMN IF NOT EXISTS pain_root_cause  TEXT,
+--   ADD COLUMN IF NOT EXISTS solution_specific TEXT,
+--   ADD COLUMN IF NOT EXISTS solution_pattern  TEXT;
+-- CREATE INDEX IF NOT EXISTS idx_listings_pain_backfill
+--   ON listings(id) WHERE pain_symptom IS NULL AND ai_processed_at IS NOT NULL;
