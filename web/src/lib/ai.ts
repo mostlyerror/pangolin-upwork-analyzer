@@ -72,6 +72,10 @@ export interface ExtractionResult {
   buyer_company_name: string | null;
   buyer_industry: string | null;
   confidence: number;
+  pain_symptom: string | null;
+  pain_root_cause: string | null;
+  solution_specific: string | null;
+  solution_pattern: string | null;
 }
 
 export async function extractListing(
@@ -104,7 +108,11 @@ Return ONLY valid JSON with these fields:
   "is_recurring_type_need": true/false (is this a problem many businesses would have?),
   "buyer_company_name": "company name if detectable, else null",
   "buyer_industry": "buyer's industry if detectable, else null",
-  "confidence": 0.0-1.0 (1.0 = clear listing with explicit details, 0.7 = reasonable but some inference needed, 0.5 = ambiguous with significant interpretation, 0.3 = vague listing where you are mostly guessing)
+  "confidence": 0.0-1.0 (1.0 = clear listing with explicit details, 0.7 = reasonable but some inference needed, 0.5 = ambiguous with significant interpretation, 0.3 = vague listing where you are mostly guessing),
+  "pain_symptom": "what the buyer explicitly describes struggling with — the surface complaint in one sentence, or null if unclear",
+  "pain_root_cause": "the underlying systemic reason they have this problem — one sentence, or null if not inferable",
+  "solution_specific": "exactly what they are asking to be built or done — one sentence, or null if vague",
+  "solution_pattern": "the generalised product category this represents — e.g. 'QuickBooks to 3PL sync tool for e-commerce ops teams' not just 'integration', or null if unclear"
 }`,
       },
     ],
@@ -179,7 +187,11 @@ Return ONLY a valid JSON array. Each element must have an "id" field matching th
   "is_recurring_type_need": true/false,
   "buyer_company_name": "company name if detectable, else null",
   "buyer_industry": "buyer's industry if detectable, else null",
-  "confidence": 0.0-1.0 (1.0 = clear listing with explicit details, 0.7 = reasonable but some inference needed, 0.5 = ambiguous with significant interpretation, 0.3 = vague listing where you are mostly guessing)
+  "confidence": 0.0-1.0 (1.0 = clear listing with explicit details, 0.7 = reasonable but some inference needed, 0.5 = ambiguous with significant interpretation, 0.3 = vague listing where you are mostly guessing),
+  "pain_symptom": "what the buyer explicitly describes struggling with — surface complaint one sentence, or null if unclear",
+  "pain_root_cause": "underlying systemic reason they have this problem — one sentence, or null if not inferable",
+  "solution_specific": "exactly what they are asking to be built or done — one sentence, or null if vague",
+  "solution_pattern": "generalised product category — e.g. 'QuickBooks to 3PL sync tool for e-commerce ops teams' not just 'integration', or null if unclear"
 }`,
         },
       ],
@@ -213,6 +225,10 @@ Return ONLY a valid JSON array. Each element must have an "id" field matching th
           buyer_company_name: item.buyer_company_name ?? null,
           buyer_industry: item.buyer_industry ?? null,
           confidence: typeof item.confidence === "number" ? item.confidence : 0.5,
+          pain_symptom: item.pain_symptom ?? null,
+          pain_root_cause: item.pain_root_cause ?? null,
+          solution_specific: item.solution_specific ?? null,
+          solution_pattern: item.solution_pattern ?? null,
         };
         return { id: l.id, result };
       } catch {
@@ -344,6 +360,10 @@ export interface WorkflowInput {
   budget_min: number | null;
   budget_max: number | null;
   is_recurring: boolean | null;
+  pain_symptom?: string | null;
+  pain_root_cause?: string | null;
+  solution_specific?: string | null;
+  solution_pattern?: string | null;
 }
 
 export interface ProductBriefMetadata {
@@ -367,7 +387,7 @@ Workflow: ${w.workflow_described || "(not described)"}
 Problem: ${w.problem_category || "(unknown)"}
 Tools: ${w.tools_mentioned?.join(", ") || "(none)"}
 Budget: ${budget}
-Recurring: ${w.is_recurring ? "yes" : "no"}`;
+Recurring: ${w.is_recurring ? "yes" : "no"}${w.pain_symptom ? `\nPain symptom: ${w.pain_symptom}` : ""}${w.pain_root_cause ? `\nRoot cause: ${w.pain_root_cause}` : ""}${w.solution_specific ? `\nSolution ask: ${w.solution_specific}` : ""}${w.solution_pattern ? `\nProduct pattern: ${w.solution_pattern}` : ""}`;
     })
     .join("\n\n");
 
