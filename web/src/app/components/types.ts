@@ -49,6 +49,10 @@ export interface Listing {
   is_recurring_type_need: boolean | null;
   ai_confidence: number | null;
   ai_raw_extraction: string | null;
+  pain_symptom: string | null;
+  pain_root_cause: string | null;
+  solution_specific: string | null;
+  solution_pattern: string | null;
 }
 
 export interface Buyer {
