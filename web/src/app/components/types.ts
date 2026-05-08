@@ -29,6 +29,7 @@ export interface Listing {
   description: string | null;
   upwork_url: string | null;
   budget_type: string | null;
+  budget_tier: string | null;
   budget_min: number | null;
   budget_max: number | null;
   problem_category: string | null;

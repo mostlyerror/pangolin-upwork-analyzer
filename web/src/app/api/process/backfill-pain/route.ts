@@ -71,7 +71,7 @@ export async function POST(req: Request) {
               solution_specific = $3, solution_pattern = $4
              WHERE id = $5`,
             [
-              item.result.pain_symptom ?? null,
+              item.result.pain_symptom ?? "",
               item.result.pain_root_cause ?? null,
               item.result.solution_specific ?? null,
               item.result.solution_pattern ?? null,

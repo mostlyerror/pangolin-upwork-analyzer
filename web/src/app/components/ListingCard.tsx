@@ -474,7 +474,7 @@ export function ListingCard({
                   ? l.tools_mentioned.join(", ")
                   : "—"}
               </div>
-              <div><span style={{ fontWeight: 600 }}>Budget tier:</span> {l.budget_type || "—"}</div>
+              <div><span style={{ fontWeight: 600 }}>Budget tier:</span> {l.budget_tier || "—"}</div>
               <div><span style={{ fontWeight: 600 }}>Recurring:</span> {l.is_recurring_type_need ? "Yes" : "No"}</div>
               <div>
                 <span style={{ fontWeight: 600 }}>Confidence:</span>{" "}
