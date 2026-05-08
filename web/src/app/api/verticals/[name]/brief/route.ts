@@ -35,9 +35,14 @@ export async function POST(
     budget_min: number | null;
     budget_max: number | null;
     is_recurring_type_need: boolean | null;
+    pain_symptom: string | null;
+    pain_root_cause: string | null;
+    solution_specific: string | null;
+    solution_pattern: string | null;
   }>(
     `SELECT l.title, l.workflow_described, l.problem_category, l.tools_mentioned,
-            l.budget_min, l.budget_max, l.is_recurring_type_need
+            l.budget_min, l.budget_max, l.is_recurring_type_need,
+            l.pain_symptom, l.pain_root_cause, l.solution_specific, l.solution_pattern
      FROM listings l
      WHERE l.vertical = $1 AND l.ai_processed_at IS NOT NULL
      ORDER BY l.captured_at DESC
@@ -58,6 +63,10 @@ export async function POST(
       budget_min: w.budget_min,
       budget_max: w.budget_max,
       is_recurring: w.is_recurring_type_need,
+      pain_symptom: w.pain_symptom,
+      pain_root_cause: w.pain_root_cause,
+      solution_specific: w.solution_specific,
+      solution_pattern: w.solution_pattern,
     })),
     {
       source_name: vertical,
