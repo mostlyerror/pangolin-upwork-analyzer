@@ -83,7 +83,7 @@ async function fetchListingsFromAPI(limit = 50) {
 
     // Pagination
     toTime = feed.paging?.resultSetTs;
-    if (!toTime || feed.results.length < limit) break;
+    if (!toTime) break;
     pages++;
   }
 
