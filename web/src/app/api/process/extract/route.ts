@@ -111,7 +111,9 @@ export async function POST(req: Request) {
                   problem_category = $1, vertical = $2, workflow_described = $3,
                   tools_mentioned = $4, budget_tier = $5, is_recurring_type_need = $6,
                   ai_processed_at = now(), ai_error = NULL,
-                  ai_raw_extraction = $8, ai_confidence = $9
+                  ai_raw_extraction = $8, ai_confidence = $9,
+                  pain_symptom = $10, pain_root_cause = $11,
+                  solution_specific = $12, solution_pattern = $13
                 WHERE id = $7`,
                 [
                   item.result.problem_category,
@@ -123,6 +125,10 @@ export async function POST(req: Request) {
                   item.id,
                   JSON.stringify(item.result),
                   item.result.confidence,
+                  item.result.pain_symptom ?? null,
+                  item.result.pain_root_cause ?? null,
+                  item.result.solution_specific ?? null,
+                  item.result.solution_pattern ?? null,
                 ]
               );
 
