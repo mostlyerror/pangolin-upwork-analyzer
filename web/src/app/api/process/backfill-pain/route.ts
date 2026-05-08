@@ -80,6 +80,7 @@ export async function POST(req: Request) {
           );
           succeeded++;
         } else {
+          console.error(`[backfill-pain] listing ${item.id} failed: ${item.error ?? "unknown"}`);
           failed++;
         }
       }
