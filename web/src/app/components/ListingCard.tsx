@@ -36,6 +36,7 @@ export function ListingCard({
   onReassign?: (listingId: number, oldClusterId: number, newClusterId: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [painExpanded, setPainExpanded] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [reassignTarget, setReassignTarget] = useState<number | null>(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<string, boolean>>({});
@@ -248,6 +249,23 @@ export function ListingCard({
           {expanded ? "Collapse" : "Spot-check"}
         </button>
 
+        {(l.pain_symptom || l.pain_root_cause || l.solution_specific || l.solution_pattern) && (
+          <button
+            onClick={() => setPainExpanded(!painExpanded)}
+            style={{
+              background: painExpanded ? "#f0fdf4" : "#f3f4f6",
+              color: painExpanded ? "#059669" : "#374151",
+              border: "none",
+              borderRadius: 4,
+              fontSize: 10,
+              fontWeight: 600,
+              padding: "2px 8px",
+            }}
+          >
+            {painExpanded ? "▾ Pain & Solution" : "▸ Pain & Solution"}
+          </button>
+        )}
+
         {/* Feedback buttons */}
         {onFeedback && (
           <>
@@ -342,6 +360,60 @@ export function ListingCard({
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pain & Solution panel */}
+      {painExpanded && (
+        <div
+          style={{
+            marginTop: 8,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+            padding: 12,
+            background: "#f0fdf4",
+            borderRadius: 6,
+            border: "1px solid #bbf7d0",
+            fontSize: 12,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {l.pain_symptom && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+                  Symptom
+                </div>
+                <div style={{ color: "#374151" }}>{l.pain_symptom}</div>
+              </div>
+            )}
+            {l.pain_root_cause && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+                  Root cause
+                </div>
+                <div style={{ color: "#374151" }}>{l.pain_root_cause}</div>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {l.solution_specific && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+                  Specific ask
+                </div>
+                <div style={{ color: "#374151" }}>{l.solution_specific}</div>
+              </div>
+            )}
+            {l.solution_pattern && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+                  Product pattern
+                </div>
+                <div style={{ color: "#059669", fontWeight: 600 }}>{l.solution_pattern}</div>
+              </div>
+            )}
           </div>
         </div>
       )}
