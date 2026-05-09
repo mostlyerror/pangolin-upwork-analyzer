@@ -23,7 +23,7 @@ export interface Listing {
   pain_root_cause: string | null;
   solution_specific: string | null;
   solution_pattern: string | null;
-  source: string;
+  source: "batch" | "single";
   saas_pitch: string | null;
 }
 
