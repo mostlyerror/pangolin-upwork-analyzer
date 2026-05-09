@@ -146,3 +146,9 @@ CREATE INDEX idx_quality_feedback_cluster ON quality_feedback(cluster_id);
 --   ADD COLUMN IF NOT EXISTS solution_pattern  TEXT;
 -- CREATE INDEX IF NOT EXISTS idx_listings_pain_backfill
 --   ON listings(id) WHERE pain_symptom IS NULL AND ai_processed_at IS NOT NULL;
+
+-- Migration: single-job analyzer — source tracking and saas_pitch (2026-05-08)
+-- ALTER TABLE listings
+--   ADD COLUMN IF NOT EXISTS source     TEXT NOT NULL DEFAULT 'batch'
+--                                           CHECK (source IN ('batch', 'single')),
+--   ADD COLUMN IF NOT EXISTS saas_pitch TEXT;

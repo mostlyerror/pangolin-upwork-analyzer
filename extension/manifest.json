@@ -3,7 +3,7 @@
   "name": "Pangolin — Upwork Signal Capture",
   "version": "0.1.0",
   "description": "Captures Upwork job listings for pattern analysis",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "tabs"],
   "host_permissions": ["https://www.upwork.com/*", "http://localhost/*"],
   "action": {
     "default_popup": "popup.html"
