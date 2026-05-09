@@ -153,7 +153,7 @@ analyzeBtn.addEventListener('click', async () => {
 
     setStatus(result.cached ? 'Loaded from cache.' : 'Analysis complete.');
   } catch (err) {
-    setStatus(`Error: ${err.message}`);
+    statusEl.textContent = `Error: ${err.message}`;
   }
 
   analyzeBtn.disabled = false;
