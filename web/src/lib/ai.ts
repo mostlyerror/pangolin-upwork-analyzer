@@ -76,6 +76,7 @@ export interface ExtractionResult {
   pain_root_cause: string | null;
   solution_specific: string | null;
   solution_pattern: string | null;
+  saas_pitch: string | null;
 }
 
 export async function extractListing(
@@ -112,7 +113,8 @@ Return ONLY valid JSON with these fields:
   "pain_symptom": "what the buyer explicitly describes struggling with — the surface complaint in one sentence, or null if unclear",
   "pain_root_cause": "the underlying systemic reason they have this problem — one sentence, or null if not inferable",
   "solution_specific": "exactly what they are asking to be built or done — one sentence, or null if vague",
-  "solution_pattern": "the generalised product category this represents — e.g. 'QuickBooks to 3PL sync tool for e-commerce ops teams' not just 'integration', or null if unclear"
+  "solution_pattern": "the generalised product category this represents — e.g. 'QuickBooks to 3PL sync tool for e-commerce ops teams' not just 'integration', or null if unclear",
+  "saas_pitch": "3-5 sentence paragraph: what SaaS product could someone build to solve this pain at scale? Name the product category, the target customer, the core workflow it automates, and why it is a repeatable business."
 }`,
       },
     ],
@@ -125,6 +127,7 @@ Return ONLY valid JSON with these fields:
   const result: ExtractionResult = {
     ...parsed,
     confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.5,
+    saas_pitch: typeof parsed.saas_pitch === "string" ? parsed.saas_pitch : null,
   };
 
   return {
@@ -229,6 +232,7 @@ Return ONLY a valid JSON array. Each element must have an "id" field matching th
           pain_root_cause: item.pain_root_cause ?? null,
           solution_specific: item.solution_specific ?? null,
           solution_pattern: item.solution_pattern ?? null,
+          saas_pitch: typeof item.saas_pitch === "string" ? item.saas_pitch : null,
         };
         return { id: l.id, result };
       } catch {
