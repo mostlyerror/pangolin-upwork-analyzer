@@ -179,6 +179,58 @@ function extractListingsFromDOM() {
   return listings;
 }
 
+// Extract data from a single job page (/jobs/~CIPHERTEXT)
+function extractSingleJob() {
+  // Try __NEXT_DATA__ first — Next.js embeds full page props as JSON
+  try {
+    const raw = document.getElementById('__NEXT_DATA__')?.textContent;
+    if (raw) {
+      const nextData = JSON.parse(raw);
+      const p = nextData?.props?.pageProps;
+      // Upwork stores job data under various keys depending on page variant
+      const job = p?.jobDetails?.job || p?.opening || p?.job || null;
+      if (job?.title) {
+        const isHourly = job.hourlyBudget != null;
+        return {
+          title: job.title,
+          description: job.description || job.descriptionText || null,
+          skills: (job.skills || job.attrs || [])
+            .map(s => s.prefLabel || s.name || (typeof s === 'string' ? s : null))
+            .filter(Boolean),
+          budgetMin: isHourly ? job.hourlyBudget?.min : (job.amount?.amount ?? null),
+          budgetMax: isHourly ? job.hourlyBudget?.max : (job.amount?.amount ?? null),
+          budgetType: isHourly ? 'hourly' : 'fixed',
+          url: window.location.href,
+        };
+      }
+    }
+  } catch {}
+
+  // DOM fallback — scrape visible elements
+  const title = document.querySelector('h1')?.textContent?.trim();
+  if (!title) return null;
+
+  const descEl = document.querySelector(
+    '[data-test="description"], .description-text, .up-c-line-clamp, .description'
+  );
+  const description = descEl?.textContent?.trim() || null;
+
+  const skillEls = document.querySelectorAll(
+    '[data-test="token"] span, .up-skill-badge span, .air3-badge-tagline'
+  );
+  const skills = [...skillEls].map(el => el.textContent?.trim()).filter(Boolean);
+
+  return {
+    title,
+    description,
+    skills,
+    budgetMin: null,
+    budgetMax: null,
+    budgetType: 'fixed',
+    url: window.location.href,
+  };
+}
+
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'extract') {
@@ -205,5 +257,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       });
 
     return true; // keep channel open for async response
+  }
+
+  if (msg.action === 'analyze') {
+    const job = extractSingleJob();
+    sendResponse(job ? { job } : { error: 'Could not extract job data from this page' });
+    return true;
   }
 });

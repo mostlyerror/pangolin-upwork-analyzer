@@ -10,7 +10,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.upwork.com/nx/*", "https://www.upwork.com/freelance-jobs/*"],
+      "matches": [
+        "https://www.upwork.com/nx/*",
+        "https://www.upwork.com/freelance-jobs/*",
+        "https://www.upwork.com/jobs/*"
+      ],
       "js": ["content.js"]
     }
   ]
