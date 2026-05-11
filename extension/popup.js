@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = 'http://localhost:3939/api/listings';
+const DEFAULT_API_URL = 'http://localhost:3005/api/analyze-single';
 
 const apiUrlInput = document.getElementById('apiUrl');
 const analyzeBtn = document.getElementById('analyzeBtn');
