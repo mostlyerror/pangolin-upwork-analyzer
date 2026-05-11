@@ -52,11 +52,17 @@ const QUERY = `query($limit: Int, $toTime: String) {
   }
 }`;
 
-async function fetchListingsFromAPI(limit = 50) {
+function randomDelay(minMs, maxMs) {
+  return new Promise(resolve =>
+    setTimeout(resolve, minMs + Math.random() * (maxMs - minMs))
+  );
+}
+
+async function fetchListingsFromAPI(limit = 25) {
   const allListings = [];
   let toTime = null;
   let pages = 0;
-  const maxPages = 5; // safety limit: 5 pages × 50 = 250 listings max
+  const maxPages = 2; // max 2 pages × 25 = 50 listings — match what a human would browse
 
   while (pages < maxPages) {
     const variables = { limit };
@@ -65,7 +71,7 @@ async function fetchListingsFromAPI(limit = 50) {
     const res = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // sends cookies for auth
+      credentials: 'include',
       body: JSON.stringify({ query: QUERY, variables }),
     });
 
@@ -81,10 +87,12 @@ async function fetchListingsFromAPI(limit = 50) {
       allListings.push(mapJobToListing(job));
     }
 
-    // Pagination
     toTime = feed.paging?.resultSetTs;
     if (!toTime) break;
     pages++;
+
+    // Pause between pages to match human browsing cadence
+    if (pages < maxPages) await randomDelay(800, 2400);
   }
 
   return allListings;
@@ -234,26 +242,20 @@ function extractSingleJob() {
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'extract') {
-    // Try GraphQL API first, fall back to DOM scraping
-    fetchListingsFromAPI(msg.limit || 50)
+    // Default: read only what's visible in the DOM (what the user is actually looking at).
+    // Falls back to the GraphQL API only if the DOM yields nothing (e.g. page not fully loaded).
+    const domListings = extractListingsFromDOM();
+    if (domListings.length > 0) {
+      sendResponse({ listings: domListings, count: domListings.length, source: 'dom' });
+      return true;
+    }
+
+    fetchListingsFromAPI(25)
       .then(listings => {
-        if (listings.length > 0) {
-          sendResponse({ listings, count: listings.length, source: 'api' });
-        } else {
-          // Fallback to DOM
-          const domListings = extractListingsFromDOM();
-          sendResponse({ listings: domListings, count: domListings.length, source: 'dom' });
-        }
+        sendResponse({ listings, count: listings.length, source: 'api' });
       })
       .catch(err => {
-        // Fallback to DOM on API error
-        const domListings = extractListingsFromDOM();
-        sendResponse({
-          listings: domListings,
-          count: domListings.length,
-          source: 'dom',
-          apiError: err.message,
-        });
+        sendResponse({ listings: [], count: 0, source: 'api', apiError: err.message });
       });
 
     return true; // keep channel open for async response
