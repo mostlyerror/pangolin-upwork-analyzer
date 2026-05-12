@@ -155,3 +155,9 @@ CREATE INDEX idx_listings_review_status ON listings(review_status);
 --   ADD COLUMN IF NOT EXISTS source     TEXT NOT NULL DEFAULT 'batch'
 --                                           CHECK (source IN ('batch', 'single')),
 --   ADD COLUMN IF NOT EXISTS saas_pitch TEXT;
+
+-- Migration: capture inbox redesign — review_status (2026-05-12)
+-- ALTER TABLE listings
+--   ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'inbox'
+--                                              CHECK (review_status IN ('inbox', 'archived', 'promoted'));
+-- CREATE INDEX IF NOT EXISTS idx_listings_review_status ON listings(review_status);
