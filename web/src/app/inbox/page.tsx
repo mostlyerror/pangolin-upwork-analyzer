@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 
 interface InboxRow {
   id: number;
-  upwork_url: string | null;
   title: string;
   budget_type: "fixed" | "hourly" | null;
   budget_min: number | null;
@@ -38,7 +37,8 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-  }).format(new Date(value));
+    timeZone: "UTC",
+  }).format(new Date(value.endsWith("Z") ? value : value + "Z"));
 }
 
 function StatusPill({ row }: { row: InboxRow }) {
@@ -65,7 +65,7 @@ function StatusPill({ row }: { row: InboxRow }) {
 
 export default async function InboxPage() {
   const listings = await query<InboxRow>(
-    `SELECT id, upwork_url, title, budget_type, budget_min, budget_max,
+    `SELECT id, title, budget_type, budget_min, budget_max,
             captured_at, ai_processed_at, ai_error, review_status
        FROM listings
       WHERE review_status = 'inbox'
