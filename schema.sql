@@ -49,7 +49,9 @@ CREATE TABLE listings (
     -- Buyer link
     buyer_id        INTEGER REFERENCES buyers(id) ON DELETE SET NULL,
 
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    review_status   TEXT NOT NULL DEFAULT 'inbox'
+                    CHECK (review_status IN ('inbox', 'archived', 'promoted'))
 );
 
 -- Opportunity clusters (AI-grouped problem categories)
@@ -137,6 +139,7 @@ CREATE TABLE quality_feedback (
 );
 CREATE INDEX idx_quality_feedback_listing ON quality_feedback(listing_id);
 CREATE INDEX idx_quality_feedback_cluster ON quality_feedback(cluster_id);
+CREATE INDEX idx_listings_review_status ON listings(review_status);
 
 -- Migration: pain & solution extraction fields (2026-05-08)
 -- ALTER TABLE listings

@@ -25,6 +25,7 @@ export interface Listing {
   solution_pattern: string | null;
   source: "batch" | "single";
   saas_pitch: string | null;
+  review_status: "inbox" | "archived" | "promoted";
 }
 
 export interface Buyer {
