@@ -9,8 +9,8 @@ interface InboxRow {
   budget_type: "fixed" | "hourly" | null;
   budget_min: number | null;
   budget_max: number | null;
-  captured_at: string;
-  ai_processed_at: string | null;
+  captured_at: string | Date;
+  ai_processed_at: string | Date | null;
   ai_error: string | null;
   review_status: "inbox" | "archived" | "promoted";
 }
@@ -33,12 +33,15 @@ function formatBudget(row: InboxRow): string | null {
   return `${fmt.format(min ?? max ?? 0)}${suffix}`;
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string | Date): string {
+  const d = value instanceof Date
+    ? value
+    : new Date(value.endsWith("Z") ? value : value + "Z");
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
-  }).format(new Date(value.endsWith("Z") ? value : value + "Z"));
+  }).format(d);
 }
 
 function StatusPill({ row }: { row: InboxRow }) {

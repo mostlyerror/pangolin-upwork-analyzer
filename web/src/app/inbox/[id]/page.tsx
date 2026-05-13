@@ -24,7 +24,10 @@ function formatBudget(listing: Listing): string | null {
   return `${fmt.format(min ?? max ?? 0)}${suffix}`;
 }
 
-function formatDateTime(value: string): string {
+function formatDateTime(value: string | Date): string {
+  const d = value instanceof Date
+    ? value
+    : new Date(value.endsWith("Z") ? value : value + "Z");
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -32,7 +35,7 @@ function formatDateTime(value: string): string {
     hour: "numeric",
     minute: "2-digit",
     timeZone: "UTC",
-  }).format(new Date(value.endsWith("Z") ? value : value + "Z"));
+  }).format(d);
 }
 
 function StatusBadge({ listing }: { listing: Listing }) {

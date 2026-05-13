@@ -15,15 +15,18 @@ interface ErroredListing {
   id: number;
   title: string;
   ai_error: string;
-  captured_at: string;
+  captured_at: string | Date;
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string | Date): string {
+  const d = value instanceof Date
+    ? value
+    : new Date(value.endsWith("Z") ? value : value + "Z");
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
-  }).format(new Date(value.endsWith("Z") ? value : value + "Z"));
+  }).format(d);
 }
 
 export default async function ProcessingPage() {
