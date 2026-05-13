@@ -60,42 +60,6 @@
       color: #666;
       min-height: 18px;
     }
-    .card {
-      margin-top: 12px;
-      border: 1px solid #d1fae5;
-      border-radius: 8px;
-      padding: 12px;
-      background: #f0fdf4;
-      display: none;
-    }
-    .card.visible { display: block; }
-    .card-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #059669;
-      margin-top: 10px;
-      margin-bottom: 2px;
-    }
-    .card-label:first-child { margin-top: 0; }
-    .card-value {
-      font-size: 12px;
-      color: #1a1a1a;
-      line-height: 1.4;
-    }
-    .card-saas {
-      font-size: 13px;
-      font-weight: 700;
-      color: #047857;
-    }
-    .card-pitch {
-      font-size: 11px;
-      color: #374151;
-      line-height: 1.5;
-      margin-top: 6px;
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
@@ -103,23 +67,13 @@
 
   <div class="config">
     <label for="apiUrl">API URL</label>
-    <input id="apiUrl" type="text" placeholder="http://localhost:3005/api/analyze-single" />
+    <input id="apiUrl" type="text" placeholder="http://localhost:3005/api/listings" />
   </div>
 
-  <p class="subtitle">Analyze this job for pain &amp; SaaS signals</p>
-  <button id="analyzeBtn">Analyze this job</button>
+  <p class="subtitle">Save this Upwork job to the Pangolin database</p>
+  <button id="analyzeBtn">Save this job</button>
 
   <div id="status"></div>
-
-  <div id="analysisCard" class="card">
-    <div class="card-label">Pain</div>
-    <div id="cardPain" class="card-value"></div>
-    <div class="card-label">Root cause</div>
-    <div id="cardRoot" class="card-value"></div>
-    <div class="card-label">SaaS idea</div>
-    <div id="cardPattern" class="card-value card-saas"></div>
-    <div id="cardPitch" class="card-pitch"></div>
-  </div>
 
   <script src="popup.js"></script>
 </body>

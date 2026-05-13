@@ -1,9 +1,8 @@
-const DEFAULT_API_URL = 'http://localhost:3005/api/analyze-single';
+const DEFAULT_API_URL = 'http://localhost:3005/api/listings';
 
 const apiUrlInput = document.getElementById('apiUrl');
 const analyzeBtn = document.getElementById('analyzeBtn');
 const statusEl = document.getElementById('status');
-const analysisCard = document.getElementById('analysisCard');
 
 chrome.storage?.local?.get(['apiUrl'], (result) => {
   apiUrlInput.value = result.apiUrl || DEFAULT_API_URL;
@@ -14,21 +13,24 @@ apiUrlInput.addEventListener('change', () => {
 });
 
 function setStatus(msg) {
-  statusEl.innerHTML = msg;
+  statusEl.textContent = msg;
 }
 
 analyzeBtn.addEventListener('click', async () => {
   analyzeBtn.disabled = true;
-  analysisCard.classList.remove('visible');
   setStatus('Extracting job from page...');
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) {
+      throw new Error('Open an Upwork job page before saving.');
+    }
 
     const jobData = await new Promise((resolve, reject) => {
       chrome.tabs.sendMessage(tab.id, { action: 'extract' }, (response) => {
         if (chrome.runtime.lastError) {
-          reject(new Error('Could not connect to page. Try reloading the Upwork tab first.'));
+          const detail = chrome.runtime.lastError.message || 'content script unavailable';
+          reject(new Error(`Could not connect to this page: ${detail}. Reload the Upwork tab and try again.`));
           return;
         }
         if (response?.error) reject(new Error(response.error));
@@ -42,32 +44,36 @@ analyzeBtn.addEventListener('click', async () => {
       return;
     }
 
-    setStatus('Analyzing with AI...');
+    setStatus('Saving job to Pangolin...');
 
     const apiUrl = apiUrlInput.value || DEFAULT_API_URL;
     const baseUrl = apiUrl.replace(/\/api\/.*$/, '');
 
-    const res = await fetch(`${baseUrl}/api/analyze-single`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(jobData),
-    });
+    const endpoint = `${baseUrl}/api/listings`;
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData),
+      });
+    } catch (err) {
+      throw new Error(
+        `Could not reach Pangolin at ${endpoint}. Check that the local app is running and the API URL is correct.`
+      );
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `Server returned ${res.status}` }));
       throw new Error(err.error || `Server returned ${res.status}`);
     }
 
-    const result = await res.json();
-    const idea = result.idea;
+    const result = await res.json().catch(() => ({}));
+    if (Array.isArray(result.errors) && result.errors.length > 0) {
+      throw new Error(result.errors.join('; '));
+    }
 
-    document.getElementById('cardPain').textContent = idea.pain_symptom || '(not detected)';
-    document.getElementById('cardRoot').textContent = idea.pain_root_cause || '(not detected)';
-    document.getElementById('cardPattern').textContent = idea.solution_pattern || '(not detected)';
-    document.getElementById('cardPitch').textContent = idea.saas_pitch || '';
-    analysisCard.classList.add('visible');
-
-    setStatus('Analysis complete.');
+    setStatus(result.inserted === 0 ? 'Already saved.' : 'Saved to Pangolin.');
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }

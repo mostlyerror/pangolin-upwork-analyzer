@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Pangolin",
-  description: "Surface SaaS ideas and buyer lists from Upwork listings",
+  description: "Capture and review Upwork opportunity signals",
 };
 
 export default function RootLayout({
@@ -22,9 +22,10 @@ export default function RootLayout({
           alignItems: "center",
           background: "white",
         }}>
-          <strong style={{ fontSize: 18 }}>Pangolin</strong>
-          <a href="/">Discover</a>
-          <a href="/import">Import</a>
+          <a href="/inbox" style={{ color: "#111827", fontWeight: 700, fontSize: 18 }}>
+            Pangolin
+          </a>
+          <a href="/inbox">Inbox</a>
         </nav>
         <main>{children}</main>
       </body>
