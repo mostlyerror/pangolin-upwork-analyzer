@@ -1,0 +1,5 @@
+{"type":"server-started","port":59808,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:59808","screen_dir":"/Users/benjaminpoon/dev/pangolin-upwork-analyzer/.superpowers/brainstorm/14973-1778624321/content","state_dir":"/Users/benjaminpoon/dev/pangolin-upwork-analyzer/.superpowers/brainstorm/14973-1778624321/state"}
+{"type":"screen-added","file":"/Users/benjaminpoon/dev/pangolin-upwork-analyzer/.superpowers/brainstorm/14973-1778624321/content/inbox-list.html"}
+{"type":"screen-added","file":"/Users/benjaminpoon/dev/pangolin-upwork-analyzer/.superpowers/brainstorm/14973-1778624321/content/detail-layout.html"}
+{"type":"screen-added","file":"/Users/benjaminpoon/dev/pangolin-upwork-analyzer/.superpowers/brainstorm/14973-1778624321/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

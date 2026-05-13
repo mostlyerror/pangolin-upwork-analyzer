@@ -1,0 +1,118 @@
+<h2>How should the inbox list look?</h2>
+<p class="subtitle">Three options — all are dense and scannable. Pick the one that feels right.</p>
+
+<div class="cards">
+
+  <!-- Option A: Table -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #f8fafc;">
+      <div style="font-family: monospace; font-size: 11px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div style="background: #f1f5f9; display: grid; grid-template-columns: 1fr 90px 70px 90px; gap: 0; padding: 6px 12px; font-weight: 700; color: #64748b; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0;">
+          <span>Title</span><span>Budget</span><span>Status</span><span>Captured</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 90px 70px 90px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; align-items: center; font-size: 11px;">
+          <span style="color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">Build Zapier integration for HubSpot CRM sync</span>
+          <span style="color: #64748b;">$500–$1k</span>
+          <span style="background: #fef3c7; color: #92400e; border-radius: 99px; padding: 2px 7px; font-size: 10px; font-weight: 600; display: inline-block;">Raw</span>
+          <span style="color: #94a3b8;">May 12, 9am</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 90px 70px 90px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; align-items: center; font-size: 11px;">
+          <span style="color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">Automate weekly Airtable reports via email</span>
+          <span style="color: #64748b;">$200</span>
+          <span style="background: #dcfce7; color: #166534; border-radius: 99px; padding: 2px 7px; font-size: 10px; font-weight: 600; display: inline-block;">Done</span>
+          <span style="color: #94a3b8;">May 11, 4pm</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 90px 70px 90px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; align-items: center; font-size: 11px;">
+          <span style="color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">n8n workflow for Notion → Slack notifications</span>
+          <span style="color: #64748b;">Hourly</span>
+          <span style="background: #fef3c7; color: #92400e; border-radius: 99px; padding: 2px 7px; font-size: 10px; font-weight: 600; display: inline-block;">Raw</span>
+          <span style="color: #94a3b8;">May 11, 1pm</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 90px 70px 90px; padding: 7px 12px; align-items: center; font-size: 11px; color: #94a3b8;">
+          <span style="font-style: italic;">… 47 more rows</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Table</h3>
+      <p>Fixed columns, consistent alignment. Easy to scan budget and status at a glance. Click a row to open the detail view.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Dense list (single line) -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #f8fafc;">
+      <div style="font-family: monospace; font-size: 11px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px;">
+          <span style="background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0;">RAW</span>
+          <span style="color: #1e293b; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Build Zapier integration for HubSpot CRM sync</span>
+          <span style="color: #94a3b8; flex-shrink: 0; font-size: 10px;">$500–$1k · May 12</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px;">
+          <span style="background: #dcfce7; color: #166534; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0;">DONE</span>
+          <span style="color: #1e293b; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Automate weekly Airtable reports via email</span>
+          <span style="color: #94a3b8; flex-shrink: 0; font-size: 10px;">$200 · May 11</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px;">
+          <span style="background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0;">RAW</span>
+          <span style="color: #1e293b; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">n8n workflow for Notion → Slack notifications</span>
+          <span style="color: #94a3b8; flex-shrink: 0; font-size: 10px;">Hourly · May 11</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 11px; color: #94a3b8;">
+          <span style="width: 38px;"></span>
+          <span style="font-style: italic;">… 47 more rows</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Dense list</h3>
+      <p>Status pill + title + metadata on one line. More rows visible, slightly less structured than a table. Click anywhere to open.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Two-line list with skill chips -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #f8fafc;">
+      <div style="font-family: monospace; font-size: 11px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="color: #1e293b; font-weight: 600; font-size: 12px;">Build Zapier integration for HubSpot CRM sync</span>
+            <span style="background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-left: 8px;">RAW</span>
+          </div>
+          <div style="display: flex; gap: 5px; align-items: center;">
+            <span style="color: #94a3b8; font-size: 10px;">$500–$1k · May 12</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">Zapier</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">HubSpot</span>
+          </div>
+        </div>
+        <div style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="color: #1e293b; font-weight: 600; font-size: 12px;">Automate weekly Airtable reports via email</span>
+            <span style="background: #dcfce7; color: #166534; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-left: 8px;">DONE</span>
+          </div>
+          <div style="display: flex; gap: 5px; align-items: center;">
+            <span style="color: #94a3b8; font-size: 10px;">$200 · May 11</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">Airtable</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">Email</span>
+          </div>
+        </div>
+        <div style="padding: 8px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="color: #1e293b; font-weight: 600; font-size: 12px;">n8n workflow for Notion → Slack notifications</span>
+            <span style="background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-left: 8px;">RAW</span>
+          </div>
+          <div style="display: flex; gap: 5px; align-items: center;">
+            <span style="color: #94a3b8; font-size: 10px;">Hourly · May 11</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">n8n</span>
+            <span style="border: 1px solid #e2e8f0; border-radius: 99px; color: #64748b; padding: 1px 6px; font-size: 10px;">Notion</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Two-line with skills</h3>
+      <p>Title + status on line 1, budget + skill chips on line 2. A bit taller but skills visible without opening the detail.</p>
+    </div>
+  </div>
+
+</div>

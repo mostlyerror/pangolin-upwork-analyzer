@@ -1,0 +1,98 @@
+#!/usr/bin/env zsh
+# Usage: ./dev [feed|workspace|pipeline|matrix|compass|all|list]
+
+port_for() {
+  case "$1" in
+    feed)      echo "3001" ;;
+    workspace) echo "3002" ;;
+    pipeline)  echo "3003" ;;
+    matrix)    echo "3004" ;;
+    compass)   echo "3005" ;;
+    signal)    echo "3006" ;;
+    fit)       echo "3007" ;;
+    lab)       echo "3008" ;;
+    landscape) echo "3009" ;;
+    portfolio) echo "3010" ;;
+    *) echo "" ;;
+  esac
+}
+
+label_for() {
+  case "$1" in
+    feed)      echo "The Feed       — dark stream, score-first cards" ;;
+    workspace) echo "The Workspace  — research notebook, two-panel" ;;
+    pipeline)  echo "The Pipeline   — kanban conviction stages" ;;
+    matrix)    echo "The Matrix     — 2D scatter portfolio map" ;;
+    compass)   echo "The Compass    — AI chat, streaming SSE" ;;
+    signal)    echo "The Signal     — market intelligence terminal" ;;
+    fit)       echo "The Fit Engine — skill-based idea matching" ;;
+    lab)       echo "The Lab        — hypothesis-driven experiments" ;;
+    landscape) echo "The Landscape  — competitive white space map" ;;
+    portfolio) echo "The Portfolio  — expected value & diversification" ;;
+  esac
+}
+
+VARIANTS=(feed workspace pipeline matrix compass signal fit lab landscape portfolio)
+TARGET="${1:-list}"
+
+if [[ "$TARGET" == "list" || -z "$TARGET" ]]; then
+  echo ""
+  echo "  Pangolin v2 variants:"
+  echo ""
+  for v in "${VARIANTS[@]}"; do
+    echo "    ./dev $v     → http://localhost:$(port_for $v)   $(label_for $v)"
+  done
+  echo ""
+  echo "  ./dev all    → start all 10 simultaneously"
+  echo ""
+  exit 0
+fi
+
+app_dir_for() {
+  case "$1" in
+    lab) echo ".worktrees/v2-lab/web" ;;
+    *)   echo ".worktrees/v2-$1/app" ;;
+  esac
+}
+
+if [[ "$TARGET" == "all" ]]; then
+  echo ""
+  echo "  Starting all 10 variants..."
+  echo ""
+  for v in "${VARIANTS[@]}"; do
+    DIR="$(app_dir_for $v)"
+    if [[ -d "$DIR" ]]; then
+      echo "    → $v on :$(port_for $v)"
+      (cd "$DIR" && npm run dev > /tmp/pangolin-$v.log 2>&1) &
+    else
+      echo "    ✗ $v not built ($DIR not found)"
+    fi
+  done
+  echo ""
+  echo "  Logs: /tmp/pangolin-<variant>.log"
+  echo "  Open launcher.html to see status"
+  echo ""
+  echo "  Press Ctrl+C to stop all."
+  wait
+  exit 0
+fi
+
+PORT="$(port_for $TARGET)"
+if [[ -z "$PORT" ]]; then
+  echo "Unknown variant: $TARGET"
+  echo "Available: feed workspace pipeline matrix compass all"
+  exit 1
+fi
+
+DIR="$(app_dir_for $TARGET)"
+if [[ ! -d "$DIR" ]]; then
+  echo "Not built yet: $DIR does not exist"
+  exit 1
+fi
+
+echo ""
+echo "  $(label_for $TARGET)"
+echo "  http://localhost:$PORT"
+echo ""
+
+cd "$DIR" && npm run dev
