@@ -1,0 +1,47 @@
+#!/usr/bin/env zsh
+# Usage: ./seed [all|feed|workspace|pipeline|matrix|compass]
+
+db_for() {
+  case "$1" in
+    feed)      echo "pangolin_v2_feed" ;;
+    workspace) echo "pangolin_v2_workspace" ;;
+    pipeline)  echo "pangolin_v2_pipeline" ;;
+    matrix)    echo "pangolin_v2_matrix" ;;
+    compass)   echo "pangolin_v2_compass" ;;
+    signal)    echo "pangolin_v2_signal" ;;
+    fit)       echo "pangolin_v2_fit" ;;
+    lab)       echo "pangolin_v2_lab" ;;
+    landscape) echo "pangolin_v2_landscape" ;;
+    portfolio) echo "pangolin_v2_portfolio" ;;
+    *) echo "" ;;
+  esac
+}
+
+VARIANTS=(feed workspace pipeline matrix compass signal fit lab landscape portfolio)
+TARGET="${1:-all}"
+
+if [[ "$TARGET" == "all" ]]; then
+  TARGETS=("${VARIANTS[@]}")
+else
+  if [[ -z "$(db_for $TARGET)" ]]; then
+    echo "Unknown variant: $TARGET"
+    echo "Available: all feed workspace pipeline matrix compass"
+    exit 1
+  fi
+  TARGETS=("$TARGET")
+fi
+
+SCRIPT_DIR="${0:A:h}"
+
+echo ""
+for v in "${TARGETS[@]}"; do
+  DB="$(db_for $v)"
+  echo "  Seeding $v → $DB"
+  if psql "$DB" < "$SCRIPT_DIR/seed.sql" > /dev/null 2>&1; then
+    COUNT=$(psql -tA "$DB" -c "SELECT count(*) FROM ideas" 2>/dev/null | tr -d ' ')
+    echo "    ✓ $COUNT ideas"
+  else
+    echo "    ✗ Failed — is the DB created? Run: createdb $DB && psql $DB < .worktrees/v2-$v/app/schema*.sql"
+  fi
+done
+echo ""

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangolin — Launcher</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f11; color: #e4e4e7; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+  h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.8rem; color: #71717a; margin-bottom: 2.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; width: 100%; max-width: 900px; }
+  .card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 1.25rem 1.5rem; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s; cursor: pointer; }
+  .card:hover { border-color: #6366f1; background: #1c1c22; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .name { font-size: 0.95rem; font-weight: 600; color: #fff; }
+  .port { font-size: 0.75rem; font-family: monospace; color: #6366f1; background: #1e1e2e; padding: 0.2rem 0.5rem; border-radius: 4px; }
+  .desc { font-size: 0.8rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 1rem; }
+  .tag { display: inline-block; font-size: 0.7rem; background: #27272a; color: #a1a1aa; padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.35rem; margin-bottom: 0.25rem; }
+  .status { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.4rem; }
+  .status.checking { background: #71717a; }
+  .status.up { background: #22c55e; }
+  .status.down { background: #ef4444; }
+  .status-text { font-size: 0.72rem; color: #71717a; }
+  .footer { margin-top: 2rem; font-size: 0.75rem; color: #3f3f46; }
+  code { font-family: monospace; background: #27272a; padding: 0.15rem 0.4rem; border-radius: 3px; color: #a1a1aa; }
+</style>
+</head>
+<body>
+<h1>Pangolin</h1>
+<p class="subtitle">micro-SaaS idea discovery · 10 variants</p>
+
+<div class="grid">
+  <a class="card" href="http://localhost:3001" target="_blank" data-port="3001">
+    <div class="card-header">
+      <span class="name">The Feed</span>
+      <span class="port">:3001</span>
+    </div>
+    <p class="desc">Social-stream discovery. Score-first cards in a dark feed. Quick save/dismiss, stats banner, daily discovery habit.</p>
+    <span class="tag">dark mode</span><span class="tag">stream</span><span class="tag">quick actions</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3001"></span><span class="status-text" id="st3001">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3002" target="_blank" data-port="3002">
+    <div class="card-header">
+      <span class="name">The Workspace</span>
+      <span class="port">:3002</span>
+    </div>
+    <p class="desc">Research notebook. Two-panel layout: idea list left, living document right. Notes, confidence rating, competitor tracking, auto-save.</p>
+    <span class="tag">two-panel</span><span class="tag">research</span><span class="tag">auto-save</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3002"></span><span class="status-text" id="st3002">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3003" target="_blank" data-port="3003">
+    <div class="card-header">
+      <span class="name">The Pipeline</span>
+      <span class="port">:3003</span>
+    </div>
+    <p class="desc">Kanban conviction stages: New → Evaluating → Validated → Building → Shipped. Stage-transition notes, risk tracking, next actions.</p>
+    <span class="tag">kanban</span><span class="tag">stages</span><span class="tag">pipeline</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3003"></span><span class="status-text" id="st3003">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3004" target="_blank" data-port="3004">
+    <div class="card-header">
+      <span class="name">The Matrix</span>
+      <span class="port">:3004</span>
+    </div>
+    <p class="desc">2D scatter plot portfolio map. Viability × budget tier. Quadrant overlays, vertical color coding, click-to-detail. Pure SVG, no libs.</p>
+    <span class="tag">visualization</span><span class="tag">scatter plot</span><span class="tag">portfolio</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3004"></span><span class="status-text" id="st3004">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3005" target="_blank" data-port="3005">
+    <div class="card-header">
+      <span class="name">The Compass</span>
+      <span class="port">:3005</span>
+    </div>
+    <p class="desc">AI chat interface. Streaming conversation with an AI that knows your entire idea library. Ask anything, get sharp answers.</p>
+    <span class="tag">AI chat</span><span class="tag">streaming</span><span class="tag">claude-sonnet</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3005"></span><span class="status-text" id="st3005">checking…</span></div>
+  </a>
+  <a class="card" href="http://localhost:3006" target="_blank" data-port="3006">
+    <div class="card-header">
+      <span class="name">The Signal</span>
+      <span class="port">:3006</span>
+    </div>
+    <p class="desc">Market intelligence terminal. Bloomberg-style dashboard answering "what's growing?". Trend lines, velocity scores, vertical heat maps from your captured listings.</p>
+    <span class="tag">market intel</span><span class="tag">trends</span><span class="tag">terminal</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3006"></span><span class="status-text" id="st3006">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3007" target="_blank" data-port="3007">
+    <div class="card-header">
+      <span class="name">The Fit Engine</span>
+      <span class="port">:3007</span>
+    </div>
+    <p class="desc">Skill-based matching. Define your own tech stack and expertise, get ideas re-ranked by personal fit. The right opportunity for YOU, not just the highest-scored.</p>
+    <span class="tag">personalized</span><span class="tag">skill matching</span><span class="tag">fit score</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3007"></span><span class="status-text" id="st3007">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3008" target="_blank" data-port="3008">
+    <div class="card-header">
+      <span class="name">The Lab</span>
+      <span class="port">:3008</span>
+    </div>
+    <p class="desc">Hypothesis-driven validation. Each idea is a falsifiable hypothesis with defined experiments, success criteria, and invalidation conditions. Scientific rigor for business bets.</p>
+    <span class="tag">hypothesis</span><span class="tag">experiments</span><span class="tag">validation</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3008"></span><span class="status-text" id="st3008">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3009" target="_blank" data-port="3009">
+    <div class="card-header">
+      <span class="name">The Landscape</span>
+      <span class="port">:3009</span>
+    </div>
+    <p class="desc">Competitive white space map. Groups pain patterns by vertical, surfaces existing solutions, highlights the gaps. Find where the market is crowded vs. where there's daylight.</p>
+    <span class="tag">competitive</span><span class="tag">white space</span><span class="tag">landscape</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3009"></span><span class="status-text" id="st3009">checking…</span></div>
+  </a>
+
+  <a class="card" href="http://localhost:3010" target="_blank" data-port="3010">
+    <div class="card-header">
+      <span class="name">The Portfolio</span>
+      <span class="port">:3010</span>
+    </div>
+    <p class="desc">Portfolio theory for product bets. Expected value scoring, risk diversification across verticals and effort levels. Build a balanced pipeline, not just a ranked list.</p>
+    <span class="tag">portfolio</span><span class="tag">expected value</span><span class="tag">diversification</span>
+    <div style="margin-top:0.75rem"><span class="status checking" id="s3010"></span><span class="status-text" id="st3010">checking…</span></div>
+  </a>
+</div>
+
+<p class="footer">Start all: <code>./dev all</code> · Start one: <code>./dev feed</code></p>
+
+<script>
+async function checkPort(port) {
+  const dot = document.getElementById('s' + port);
+  const text = document.getElementById('st' + port);
+  try {
+    const res = await fetch('http://localhost:' + port, { mode: 'no-cors', signal: AbortSignal.timeout(2000) });
+    dot.className = 'status up';
+    text.textContent = 'running';
+  } catch {
+    dot.className = 'status down';
+    text.textContent = 'not running';
+  }
+}
+
+[3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010].forEach(checkPort);
+setInterval(() => [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010].forEach(checkPort), 5000);
+</script>
+</body>
+</html>
