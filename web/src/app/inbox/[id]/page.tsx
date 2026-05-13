@@ -1,5 +1,6 @@
 import { queryOne } from "@/lib/db";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Listing } from "@/types";
 import StatusActions from "./StatusActions";
 
@@ -18,9 +19,9 @@ function formatBudget(listing: Listing): string | null {
   const suffix = listing.budget_type === "hourly" ? "/hr" : "";
 
   if (min != null && max != null && min !== max) {
-    return `${fmt.format(min)}–${fmt.format(max)} ${listing.budget_type ?? ""}${suffix}`;
+    return `${fmt.format(min)}–${fmt.format(max)}${suffix}`;
   }
-  return `${fmt.format(min ?? max ?? 0)} ${listing.budget_type ?? ""}${suffix}`;
+  return `${fmt.format(min ?? max ?? 0)}${suffix}`;
 }
 
 function formatDateTime(value: string): string {
@@ -81,9 +82,9 @@ export default async function InboxDetailPage({
         borderBottom: "1px solid #e2e8f0",
         flexWrap: "wrap",
       }}>
-        <a href="/inbox" style={{ color: "#6366f1", fontSize: 13, textDecoration: "none", marginRight: 4 }}>
+        <Link href="/inbox" style={{ color: "#6366f1", fontSize: 13, textDecoration: "none", marginRight: 4 }}>
           ← Inbox
-        </a>
+        </Link>
         <StatusBadge listing={listing} />
         <div style={{ flex: 1 }} />
         <StatusActions listingId={listing.id} upworkUrl={listing.upwork_url} />

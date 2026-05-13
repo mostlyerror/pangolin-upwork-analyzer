@@ -14,12 +14,19 @@ export default function StatusActions({ listingId, upworkUrl }: Props) {
 
   async function setStatus(status: "archived" | "promoted") {
     setBusy(true);
-    await fetch(`/api/listings/${listingId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ review_status: status }),
-    });
-    router.push("/inbox");
+    try {
+      const res = await fetch(`/api/listings/${listingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ review_status: status }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      router.push("/inbox");
+    } catch (err) {
+      console.error("setStatus failed", err);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
