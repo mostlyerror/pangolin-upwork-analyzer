@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne } from "@/lib/db";
+import type { Listing } from "@/types";
 
 const VALID_STATUSES = ["inbox", "archived", "promoted"] as const;
 type ReviewStatus = (typeof VALID_STATUSES)[number];
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const numId = parseInt(id, 10);
+  if (isNaN(numId)) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const row = await queryOne<Listing>(
+    "SELECT * FROM listings WHERE id = $1",
+    [numId]
+  );
+
+  if (!row) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(row);
+}
 
 export async function PATCH(
   req: NextRequest,
