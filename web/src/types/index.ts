@@ -26,6 +26,10 @@ export interface Listing {
   source: "batch" | "single";
   saas_pitch: string | null;
   review_status: "inbox" | "archived" | "promoted";
+  ai_error: string | null;
+  ai_raw_extraction: string | null;
+  ai_confidence: number | null;
+  created_at: string;
 }
 
 export interface Buyer {
