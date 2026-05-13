@@ -26,6 +26,8 @@ export default function RootLayout({
             Pangolin
           </a>
           <a href="/inbox">Inbox</a>
+          <a href="/opportunities">Opportunities</a>
+          <a href="/processing">Processing</a>
         </nav>
         <main>{children}</main>
       </body>

@@ -82,12 +82,19 @@ export default async function InboxDetailPage({
         borderBottom: "1px solid #e2e8f0",
         flexWrap: "wrap",
       }}>
-        <Link href="/inbox" style={{ color: "#6366f1", fontSize: 13, textDecoration: "none", marginRight: 4 }}>
-          ← Inbox
+        <Link
+          href={listing.review_status === "promoted" ? "/opportunities" : "/inbox"}
+          style={{ color: "#6366f1", fontSize: 13, textDecoration: "none", marginRight: 4 }}
+        >
+          {listing.review_status === "promoted" ? "← Opportunities" : "← Inbox"}
         </Link>
         <StatusBadge listing={listing} />
         <div style={{ flex: 1 }} />
-        <StatusActions listingId={listing.id} upworkUrl={listing.upwork_url} />
+        <StatusActions
+          listingId={listing.id}
+          upworkUrl={listing.upwork_url}
+          reviewStatus={listing.review_status}
+        />
       </div>
 
       <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1e293b", lineHeight: 1.3, marginBottom: 16 }}>
